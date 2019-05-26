@@ -1,4 +1,5 @@
 # Visualizing Music
+### Evan Mitchell & Merissa Tan
 
 #### Faculty Research Mentor
 John David N. Dionisio (Electrical Engineering and Computer Science)
