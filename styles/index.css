@@ -1,0 +1,24 @@
+body {
+  background-color: #e6ecf0;
+}
+
+h1 {
+  text-align: center;
+}
+
+footer {
+  margin-top: 5px;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 5px;
+  text-align: center;
+}
+
+#myCanvas {
+  width: 800px;
+  height: 400px;
+  padding: 0;
+  margin: auto;
+  display: block;
+}
