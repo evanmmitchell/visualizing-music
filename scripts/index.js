@@ -1,33 +1,53 @@
-var scene, camera, renderer;
-var cube;
+let scene, camera, renderer;
+let notes = [];
+// let blocks = [];
+// let i = 0;
 
+getNotes();
 init();
 animate();
 
 
+function getNotes() {
+  let sourceNotes = [{ pitch: 1, start: 0, duration: 2 }, { pitch: 0, start: 2, duration: 1 }];
+  for (let i = 0; i < sourceNotes.length; i++) {
+    let note = sourceNotes[i];
+    notes.push(note);
+  }
+}
+
 function init() {
-  var canvas = document.getElementById("myCanvas");
+  let canvas = document.getElementById("myCanvas");
 
   scene = new THREE.Scene();
 
-  var frustumSize = 3;
-  var aspect = canvas.offsetWidth / canvas.offsetHeight;
+  let frustumSize = 10;
+  let aspect = canvas.offsetWidth / canvas.offsetHeight;
   camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 1, 1000);
-  // camera = new THREE.PerspectiveCamera(75, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000);
   camera.position.set(0, 0, 3);
 
   renderer = new THREE.WebGLRenderer({ canvas });
   renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
-  var geometry = new THREE.BoxGeometry(1, 1, 1);
-  var material = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, wireframe: true });
-  cube = new THREE.Mesh(geometry, material);
-  scene.add(cube);
+  // For static visualization
+  for (let i = 0; i < notes.length; i++) {
+    let note = notes[i];
+    let geometry = new THREE.BoxGeometry(note.duration, 1, 1);
+    let material = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, wireframe: true });
+    let block = new THREE.Mesh(geometry, material);
+    block.position.set(note.start + (note.duration) / 2, note.pitch, 0);
+    scene.add(block);
+  }
 }
 
 function render() {
-  cube.rotation.x += 0.002;
-  cube.rotation.y += 0.001;
+  // For dynamic visualization
+  // if (i < notes.length) {
+  //   block.geometry = new THREE.BoxGeometry(i * 0.1, 1, 1);
+  //   block.position.x = i * 0.05;
+  //
+  //   i++;
+  // }
 
   renderer.render(scene, camera);
 }
