@@ -15,7 +15,7 @@ footer {
   text-align: center;
 }
 
-#myCanvas {
+canvas {
   width: 800px;
   height: 400px;
   padding: 0;
