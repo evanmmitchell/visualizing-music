@@ -4,9 +4,10 @@ let directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);
 let displacementVector = new THREE.Vector3(), scalingVector = new THREE.Vector3();
 let notes = [];
 
+const musicFile = document.getElementById("inputFile").files[0];
+
 initialize();
 animate();
-
 
 function getMusic() {
   let title = document.getElementById("title");
