@@ -13,12 +13,12 @@ def parse(file):
         file: A string giving the path to a file on disk or an open file-like object.
 
     Returns:
-        A list of strings, with each string containing one atomic MIDI command
+        A string, with each line containing one atomic MIDI command
         in CSV format.
 
-        ["0, 0, Header, 1, 1, 480",
-         "1, 0, Start_track",
-         "1, 0, Tempo, 500000"]
+        '''0, 0, Header, 1, 1, 480
+           1, 0, Start_track
+           1, 0, Tempo, 500000'''
     """
     csv_file = []
     pattern = read_midifile(file)
@@ -30,4 +30,4 @@ def parse(file):
             abstime += event.tick
             csv_file.append(midi_to_csv_map[type(event)](index + 1, abstime, event))
     csv_file.append("0, 0, End_of_file")
-    return csv_file
+    return "".join(csv_file)
