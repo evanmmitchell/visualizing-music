@@ -1,7 +1,7 @@
 import sys
-import operator
 import json
-import midicsv
+
+from midicsv import midi_to_csv
 
 
 class NoteEvent:
@@ -16,29 +16,24 @@ class Note:
     def __init__(self, noteEvent_on, noteEvent_off):
         self.track = noteEvent_on.track
         self.start = TempoMap.microsAtTick(noteEvent_on.tick) / 1000000
-        self.end = TempoMap.microsAtTick(noteEvent_off.tick) / 1000000
+        end = TempoMap.microsAtTick(noteEvent_off.tick) / 1000000
         self.pitch = noteEvent_on.pitch
         self.velocity = noteEvent_on.velocity
-        self.duration = self.end - self.start
+        self.duration = end - self.start
 
 
 class TempoEvent:
-    def __init__(self, tick, tempo, micros):
+    def __init__(self, tick, tempo):
         self.tick = tick
         self.tempo = tempo
-        self.micros = micros
 
 
 class TempoMap:
     tpqn = 480  # ticks per quarter note
     tmap = []
 
-    def addTempo(tick, tempo):
-        tempoEvent = TempoEvent(tick, tempo, TempoMap.microsAtTick(tick))
-        TempoMap.tmap.append(tempoEvent)
-
     def tempoEventAtTick(tick):
-        savedTempoEvent = TempoEvent(0, 0, 0)
+        savedTempoEvent = TempoEvent(0, 500000)
         for tempoEvent in TempoMap.tmap:
             if tempoEvent.tick > tick:
                 break
@@ -46,11 +41,12 @@ class TempoMap:
         return savedTempoEvent
 
     def microsAtTick(tick):
+        if tick == 0:
+            return 0
         tempoEvent = TempoMap.tempoEventAtTick(tick)
         return (
-            tempoEvent.micros
-            # TempoMap.microsAtTick(tempoEvent.tick)
-            + ((tick - tempoEvent.tick) * tempoEvent.tempo) / TempoMap.tpqn
+            TempoMap.microsAtTick(tempoEvent.tick)
+            + (tick - tempoEvent.tick) * tempoEvent.tempo / TempoMap.tpqn
         )
 
 
@@ -58,17 +54,12 @@ file = sys.argv[1]
 rows = []
 if file.lower().endswith(("mid", "midi", "kar")):
     try:
-        rows = midicsv.midi_to_csv(file).splitlines()
+        rows = midi_to_csv(file).splitlines()
     except OSError:
         sys.exit("Couldn't open '" + file + "'.")
-# elif file.lower().endswith(("mscx", "mscz")):
+# elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
 #     try:
-#         tmpFile = "tmp-" + file + ".mid"
-#         subprocess.call(
-#             ["bash", "-c", "mscore " + file + " -o " + tmpFile + " &>/dev/null"]
-#         )
-#         rows = subprocess.check_output(["midicsv", tmpFile]).splitlines()
-#         subprocess.call(["rm", tmpFile])
+#
 #     except OSError:
 #         sys.exit("Couldn't open '" + file + "'.")
 else:
@@ -84,7 +75,7 @@ for i, row in enumerate(rows):
         TempoMap.tpqn = int(cells[5])
     elif event == "Tempo":
         tempo = int(cells[3])
-        TempoMap.addTempo(tick, tempo)
+        TempoMap.tmap.append(TempoEvent(tick, tempo))
     elif event == "Note_on_c":
         pitch = int(cells[4])
         velocity = int(cells[5])
@@ -96,19 +87,15 @@ for i, row in enumerate(rows):
 
 notes = []
 for i, noteEvent_on in enumerate(noteEvents):
-    if noteEvent_on.velocity == 0:
-        continue
     for noteEvent_off in noteEvents[i:]:
         if (
-            noteEvent_off.velocity != 0
-            or noteEvent_off.track != noteEvent_on.track
-            or noteEvent_off.pitch != noteEvent_on.pitch
+            noteEvent_on.velocity != 0
+            and noteEvent_off.velocity == 0
+            and noteEvent_on.track == noteEvent_off.track
+            and noteEvent_on.pitch == noteEvent_off.pitch
         ):
-            continue
-        notes.append(Note(noteEvent_on, noteEvent_off))
-        break
-
-notes.sort(key=operator.attrgetter("start"))
+            notes.append(Note(noteEvent_on, noteEvent_off))
+            break
 
 notes = [vars(note) for note in notes]
 print(json.dumps(notes))
