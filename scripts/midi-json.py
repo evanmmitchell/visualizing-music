@@ -16,10 +16,9 @@ class Note:
     def __init__(self, noteEvent_on, noteEvent_off):
         self.track = noteEvent_on.track
         self.start = TempoMap.microsAtTick(noteEvent_on.tick) / 1000000
-        end = TempoMap.microsAtTick(noteEvent_off.tick) / 1000000
+        self.end = TempoMap.microsAtTick(noteEvent_off.tick) / 1000000
         self.pitch = noteEvent_on.pitch
         self.velocity = noteEvent_on.velocity
-        self.duration = end - self.start
 
 
 class TempoEvent:

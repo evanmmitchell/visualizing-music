@@ -3,6 +3,7 @@ let directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO:
 let displacementVector = new THREE.Vector3(), scalingVector = new THREE.Vector3(1, 1, 1), spacingVector = new THREE.Vector3(1, 1, 1);
 let notes, musicFile, title;
 let objectsOnScene = [];
+let colors = [ 0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3 ];
 
 initialize();
 animate();
@@ -26,7 +27,7 @@ function initialize() {
   let ambientLight = new THREE.AmbientLight(0xFFFFFF);
   scene.add(ambientLight);
 
-  directionalLight = new THREE.DirectionalLight(0xFFFFFF);
+  directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.5);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
 
@@ -90,7 +91,7 @@ function getMusic() {
   // musicFile = document.getElementById("inputFile").files[0];
   if (musicFile === undefined) {
     title.textContent = "Happy Birthday";
-    notes = parseJSONFileAt("scripts/happy-birthday-simplified.json");
+    notes = parseJSONFileAt("scripts/happy-birthday.json");
   } else {
     // Obtain JSON by passing musicFle to scripts/midi-json.py
     // notes = JSON.parse();
@@ -104,10 +105,12 @@ function staticVisualization() {
 
   for (let i = 0; i < notes.length; i++) {
     let note = notes[i];
+    note.duration = note.end - note.start;
     let boxGeometry = new THREE.BoxGeometry(note.duration, 1, 1);
     boxGeometry.scale(scalingVector.x, scalingVector.y, scalingVector.z);
+    console.log(colors[note.track % colors.length]);
     let boxMaterial = new THREE.MeshStandardMaterial({
-      color: "blue", transparent: true, opacity: 0.3 // TODO: opacity to be dynamics
+      color: colors[note.track % colors.length], transparent: true, opacity: 0.3 // TODO: opacity to be dynamics
     });
     let box = new THREE.Mesh(boxGeometry, boxMaterial);
     box.position.set(note.start + note.duration / 2, note.pitch, note.track);
