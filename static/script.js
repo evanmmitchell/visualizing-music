@@ -1,9 +1,9 @@
 let canvas, scene, camera, renderer, controls, directionalLight;
 let directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
 let displacementVector = new THREE.Vector3(), scalingVector = new THREE.Vector3(1, 1, 1), spacingVector = new THREE.Vector3(1, 1, 1);
-let notes, musicFile, title;
+let fileInput, title;
 let objectsOnScene = [];
-let colors = [ 0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3 ];
+let colors = [0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3];
 
 initialize();
 animate();
@@ -11,6 +11,9 @@ animate();
 
 function initialize() {
   title = document.getElementById("title");
+
+  fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", getMusic);
 
   canvas = document.createElement("canvas");
   document.body.appendChild(canvas);
@@ -36,7 +39,7 @@ function initialize() {
   // TODO: change to trackball control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-  updateMusicVisualization();
+  getMusic();
 }
 
 function animate() {
@@ -50,9 +53,18 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-function updateMusicVisualization() {
-  getMusic();
+function getMusic() {
+  let musicFile = fileInput.files[0];
+  if (musicFile === undefined) {
+    title.textContent = "Happy Birthday";
+    visualizeMidi("sample-music/happy-birthday-simplified.mid");
+  } else {
+    title.textContent = "titleOfSong";  // TODO: Replace with title of song
+    visualizeMidi(musicFile);
+  }
+}
 
+function updateMusicVisualization(notes) {
   let maxPitch = -Infinity, minPitch = Infinity;
   let maxTrack = -Infinity, minTrack = Infinity;
   for (let i = 0; i < notes.length; i++) {
@@ -84,21 +96,10 @@ function updateMusicVisualization() {
   camera.updateProjectionMatrix();
   camera.position.set(0, 0, 3);
 
-  staticVisualization();
+  staticVisualization(notes);
 }
 
-function getMusic() {
-  // musicFile = document.getElementById("inputFile").files[0];
-  if (musicFile === undefined) {
-    title.textContent = "Happy Birthday";
-    notes = parseJSONFileAt("scripts/happy-birthday.json");
-  } else {
-    // Obtain JSON by passing musicFle to scripts/midi-json.py
-    // notes = JSON.parse();
-  }
-}
-
-function staticVisualization() {
+function staticVisualization(notes) {
   for (let i = 0; i < objectsOnScene.length; i++) {
     scene.remove(objectsOnScene[i]);
   }
@@ -108,7 +109,6 @@ function staticVisualization() {
     note.duration = note.end - note.start;
     let boxGeometry = new THREE.BoxGeometry(note.duration, 1, 1);
     boxGeometry.scale(scalingVector.x, scalingVector.y, scalingVector.z);
-    console.log(colors[note.track % colors.length]);
     let boxMaterial = new THREE.MeshStandardMaterial({
       color: colors[note.track % colors.length], transparent: true, opacity: 0.3 // TODO: opacity to be dynamics
     });
@@ -133,16 +133,16 @@ function staticVisualization() {
   }
 }
 
-function parseJSONFileAt(path) {
-  var result;
-  var xobj = new XMLHttpRequest();
-  xobj.overrideMimeType("application/json");
-  xobj.open("GET", path, false);
-  xobj.onreadystatechange = function () {
-    if (xobj.readyState == 4 && xobj.status == "200") {
-      result = JSON.parse(xobj.responseText);
+function visualizeMidi(midiFile) {
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "/process-midi", true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4 && xhr.status == "200") {
+      notes = JSON.parse(xhr.responseText);
+      updateMusicVisualization(notes);
     }
   };
-  xobj.send(null);
-  return result;
+  xhr.send(midiFile);
+  return;
 }
+
