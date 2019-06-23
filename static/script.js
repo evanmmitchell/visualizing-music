@@ -57,7 +57,7 @@ function getMusic() {
   let musicFile = fileInput.files[0];
   if (musicFile === undefined) {
     title.textContent = "Happy Birthday";
-    visualizeMidi("sample-music/happy-birthday-simplified.mid");
+    visualizeMidi("sample-midi/happy-birthday-simplified.mid");
   } else {
     title.textContent = "titleOfSong";  // TODO: Replace with title of song
     visualizeMidi(musicFile);
@@ -134,6 +134,8 @@ function staticVisualization(notes) {
 }
 
 function visualizeMidi(midiFile) {
+  let formData = new FormData();
+  formData.append("midiFile", midiFile)
   let xhr = new XMLHttpRequest();
   xhr.open("POST", "/process-midi", true);
   xhr.onreadystatechange = function () {
