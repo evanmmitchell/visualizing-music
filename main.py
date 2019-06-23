@@ -16,9 +16,14 @@ def root():
 
 @app.route("/process-midi", methods=["POST"])
 def jsonify_midi():
-    file = request.get_data().decode("UTF-8")
-    notes = process_midi(file)
-    return jsonify(notes)
+    try:
+        file = request.files["midiFile"]
+        name = file.filename
+    except:
+        file = "sample-midi/happy-birthday-simplified.mid"
+        name = "happy-birthday-simplified.mid"
+    title, notes = process_midi(file, name)
+    return jsonify(title, notes)
 
 
 if __name__ == "__main__":

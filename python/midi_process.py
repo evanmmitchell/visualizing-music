@@ -48,22 +48,20 @@ class TempoMap:
         )
 
 
-def process_midi(file):
+def process_midi(file, name):
     rows = []
-    if file.lower().endswith(("mid", "midi", "kar")):
-        try:
+    try:
+        if name.lower().endswith(("mid", "midi", "kar")):
             rows = midi_to_csv(file).splitlines()
-        except OSError:
-            sys.exit("Couldn't open '" + file + "'.")
-    # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
-    #     try:
-    #
-    #     except OSError:
-    #         sys.exit("Couldn't open '" + file + "'.")
-    else:
-        sys.exit("Couldn't process " + file + " (invalid file extension).")
+        # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
+        #
+        else:
+            sys.exit("Couldn't process " + name + " (invalid file extension).")
+    except OSError:
+        sys.exit("Couldn't open '" + name + "'.")
 
     noteEvents = []
+    title = name
     for i, row in enumerate(rows):
         cells = row.split(", ")
         track = int(cells[0])
@@ -71,6 +69,8 @@ def process_midi(file):
         event = cells[2]
         if event == "Header":
             TempoMap.tpqn = int(cells[5])
+        elif event == "Title_t":
+            title = cells[3][1:-1]
         elif event == "Tempo":
             tempo = int(cells[3])
             TempoMap.tmap.append(TempoEvent(tick, tempo))
@@ -96,4 +96,4 @@ def process_midi(file):
                 break
 
     notes = [vars(note) for note in notes]
-    return notes
+    return [title, notes]

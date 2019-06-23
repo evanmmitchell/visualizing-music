@@ -13,7 +13,7 @@ function initialize() {
   title = document.getElementById("title");
 
   fileInput = document.getElementById("fileInput");
-  fileInput.addEventListener("change", getMusic);
+  fileInput.addEventListener("change", visualizeMidi);
 
   canvas = document.createElement("canvas");
   document.body.appendChild(canvas);
@@ -39,7 +39,7 @@ function initialize() {
   // TODO: change to trackball control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-  getMusic();
+  visualizeMidi();
 }
 
 function animate() {
@@ -51,17 +51,6 @@ function animate() {
   // Use THREE.Clock for time in dynamic visualization
 
   renderer.render(scene, camera);
-}
-
-function getMusic() {
-  let musicFile = fileInput.files[0];
-  if (musicFile === undefined) {
-    title.textContent = "Happy Birthday";
-    visualizeMidi("sample-midi/happy-birthday-simplified.mid");
-  } else {
-    title.textContent = "titleOfSong";  // TODO: Replace with title of song
-    visualizeMidi(musicFile);
-  }
 }
 
 function updateMusicVisualization(notes) {
@@ -133,18 +122,21 @@ function staticVisualization(notes) {
   }
 }
 
-function visualizeMidi(midiFile) {
+function visualizeMidi() {
+  let midiFile = fileInput.files[0];
   let formData = new FormData();
   formData.append("midiFile", midiFile)
   let xhr = new XMLHttpRequest();
   xhr.open("POST", "/process-midi", true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == "200") {
-      notes = JSON.parse(xhr.responseText);
+      let response = JSON.parse(xhr.responseText);
+      name = response[0];
+      notes = response[1];
+      title.textContent = name;
       updateMusicVisualization(notes);
     }
   };
-  xhr.send(midiFile);
+  xhr.send(formData);
   return;
 }
-
