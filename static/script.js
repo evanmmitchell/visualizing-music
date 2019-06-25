@@ -84,6 +84,7 @@ function updateMusicVisualization(notes) {
   camera.far = 50;
   camera.updateProjectionMatrix();
   camera.position.set(0, 0, 3);
+  controls.update()
 
   staticVisualization(notes);
 }
@@ -102,7 +103,7 @@ function staticVisualization(notes) {
       color: colors[note.track % colors.length], transparent: true, opacity: 0.3 // TODO: opacity to be dynamics
     });
     let box = new THREE.Mesh(boxGeometry, boxMaterial);
-    box.position.set(note.start + note.duration / 2, note.pitch, note.track);
+    box.position.set(note.start + note.duration / 2, note.pitch, -note.track);
     box.position.sub(displacementVector).multiply(scalingVector).multiply(spacingVector);
     box.castShadow = true;
     box.receiveShadow = true;
