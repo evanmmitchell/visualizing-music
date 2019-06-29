@@ -6,6 +6,9 @@ sys.path.append("./python")
 from midi_process import process_midi
 
 
+default_midi_path = "sample-midi/happy-birthday-simplified.mid"
+
+
 app = Flask(__name__)
 
 
@@ -19,10 +22,11 @@ def jsonify_midi():
     try:
         file = request.files["midiFile"]
         name = file.filename
+        title, notes = process_midi(file, name)
     except:
-        file = "sample-midi/happy-birthday-simplified.mid"
-        name = "happy-birthday-simplified.mid"
-    title, notes = process_midi(file, name)
+        file = default_midi_path
+        name = default_midi_path.split("/")[-1]
+        title, notes = process_midi(file, name)
     return jsonify(title, notes)
 
 
