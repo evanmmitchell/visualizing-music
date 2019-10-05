@@ -1,23 +1,15 @@
 import sys
-
 from midicsv import midi_to_csv
 
 
-class NoteEvent:
-    def __init__(self, track, tick, pitch, velocity):
+class Note:
+    def __init__(self, track, tick_on, tick_off, pitch, velocity):
         self.track = track
-        self.tick = tick
+        self.start = TempoMap.microsAtTick(tick_on) / 1000000
+        self.end = TempoMap.microsAtTick(tick_off) / 1000000
+        self.duration = self.end - self.start
         self.pitch = pitch
         self.velocity = velocity
-
-
-class Note:
-    def __init__(self, noteEvent_on, noteEvent_off):
-        self.track = noteEvent_on.track
-        self.start = TempoMap.microsAtTick(noteEvent_on.tick) / 1000000
-        self.end = TempoMap.microsAtTick(noteEvent_off.tick) / 1000000
-        self.pitch = noteEvent_on.pitch
-        self.velocity = noteEvent_on.velocity
 
 
 class TempoEvent:
@@ -28,10 +20,9 @@ class TempoEvent:
 
 class TempoMap:
     tpqn = 480  # ticks per quarter note
-    tmap = []
+    tmap = [TempoEvent(0, 500000)]
 
     def tempoEventAtTick(tick):
-        savedTempoEvent = TempoEvent(0, 500000)
         for tempoEvent in TempoMap.tmap:
             if tempoEvent.tick > tick:
                 break
@@ -50,50 +41,54 @@ class TempoMap:
 
 def process_midi(file, name):
     rows = []
-    try:
-        if name.lower().endswith(("mid", "midi", "kar")):
-            rows = midi_to_csv(file).splitlines()
-        # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
-        #
-        else:
-            sys.exit("Couldn't process " + name + " (invalid file extension).")
-    except OSError:
-        sys.exit("Couldn't open '" + name + "'.")
+    if name.lower().endswith(("mid", "midi", "kar")):
+        rows = midi_to_csv(file).splitlines()
 
-    noteEvents = []
-    title = name
+        for row in rows:
+            if "Tempo" not in row:
+                continue
+            print(row)
+
+    # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
+    else:
+        raise ValueError("Couldn't process " + name + " (invalid file extension).")
+
+    notes = []
+    title = ".".join(name.split(".")[:-1])  # Remove file extension
     for i, row in enumerate(rows):
         cells = row.split(", ")
-        track = int(cells[0])
-        tick = int(cells[1])
         event = cells[2]
         if event == "Header":
             TempoMap.tpqn = int(cells[5])
         elif event == "Title_t":
             title = cells[3][1:-1]
         elif event == "Tempo":
+            tick = int(cells[1])
             tempo = int(cells[3])
             TempoMap.tmap.append(TempoEvent(tick, tempo))
         elif event == "Note_on_c":
-            pitch = int(cells[4])
             velocity = int(cells[5])
-            noteEvents.append(NoteEvent(track, tick, pitch, velocity))
-        elif event == "Note_off_c":
-            pitch = int(cells[4])
-            velocity = 0
-            noteEvents.append(NoteEvent(track, tick, pitch, velocity))
-
-    notes = []
-    for i, noteEvent_on in enumerate(noteEvents):
-        for noteEvent_off in noteEvents[i:]:
-            if (
-                noteEvent_on.velocity != 0
-                and noteEvent_off.velocity == 0
-                and noteEvent_on.track == noteEvent_off.track
-                and noteEvent_on.pitch == noteEvent_off.pitch
-            ):
-                notes.append(Note(noteEvent_on, noteEvent_off))
-                break
+            if velocity != 0:
+                track_on = int(cells[0])
+                tick_on = int(cells[1])
+                pitch_on = int(cells[4])
+                velocity_on = velocity
+                for row in rows[i:]:
+                    cells = row.split(", ")
+                    event = cells[2]
+                    if event == "Note_on_c" or event == "Note_off_c":
+                        velocity = 0 if event == "Note_off_c" else int(cells[5])
+                        if velocity == 0:
+                            track_off = int(cells[0])
+                            tick_off = int(cells[1])
+                            pitch_off = int(cells[4])
+                            if track_on == track_off and pitch_on == pitch_off:
+                                track = track_on
+                                pitch = pitch_on
+                                velocity = velocity_on
+                                note = Note(track, tick_on, tick_off, pitch, velocity)
+                                notes.append(note)
+                                break
 
     notes = [vars(note) for note in notes]
     return [title, notes]
