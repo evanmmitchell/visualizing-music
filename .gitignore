@@ -1,8 +1,3 @@
-# Google Cloud
-.gcloudignore
-app.yaml
-requirements.txt
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
