@@ -138,7 +138,7 @@ function staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime)
   }
 }
 
-function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {
+function staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, endTime) {
   let durationScaleFactor = 1.5;
   let radiusScaleFactor = 100 / (maxPitch - minPitch);
   let thetaScaleFactor = 2 * Math.PI / (endTime - startTime);
@@ -152,7 +152,7 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
     let radius = (note.pitch - minPitch) * radiusScaleFactor;
     let theta = (note.start - startTime) * thetaScaleFactor;
     let depth = -note.track + minTrack;
-    sphere.position.setCylindricalCoords(radius, theta, depth);
+    sphere.position.setFromCylindricalCoords(radius, theta, depth);
     sphere.rotateY(Math.PI / 2); //Hopefully doesnt just rotate sphere
     sphere.castShadow = true;
     sphere.receiveShadow = true;
