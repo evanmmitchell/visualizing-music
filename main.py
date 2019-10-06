@@ -21,7 +21,7 @@ def jsonify_midi():
         name = file.filename
         title, notes = process_midi(file, name)
     except Exception as e:
-        sys.stderr.write(str(e) + "\n")
+        # sys.stderr.write(str(e) + "\n")
         file = DEFAULT_MIDI_PATH
         name = DEFAULT_MIDI_PATH.split("/")[-1]
         title, notes = process_midi(file, name)
