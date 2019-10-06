@@ -20,24 +20,27 @@ class TempoMap:
     tpqn = 480  # ticks per quarter note
     tmap = []
 
-    def addTempo(tick, tempo):
+    @classmethod
+    def addTempo(cls, tick, tempo):
         tempoEvent = TempoEvent()
         tempoEvent.tick = tick
         tempoEvent.tempo = tempo
-        tempoEvent.micros = TempoMap.microsAtTick(tick)
-        TempoMap.tmap.append(tempoEvent)
+        tempoEvent.micros = cls.microsAtTick(tick)
+        cls.tmap.append(tempoEvent)
 
-    def tempoEventAtTick(tick):
+    @classmethod
+    def tempoEventAtTick(cls, tick):
         savedTempoEvent = TempoEvent()
-        for tempoEvent in TempoMap.tmap:
+        for tempoEvent in cls.tmap:
             if tempoEvent.tick > tick:
                 break
             savedTempoEvent = tempoEvent
         return savedTempoEvent
 
-    def microsAtTick(tick):
-        tempoEvent = TempoMap.tempoEventAtTick(tick)
-        return tempoEvent.micros + ((tick - tempoEvent.tick) * tempoEvent.tempo) / TempoMap.tpqn
+    @classmethod
+    def microsAtTick(cls, tick):
+        tempoEvent = cls.tempoEventAtTick(tick)
+        return tempoEvent.micros + ((tick - tempoEvent.tick) * tempoEvent.tempo) / cls.tpqn
 
 
 def process_midi(file, name):
