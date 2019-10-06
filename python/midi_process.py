@@ -11,18 +11,24 @@ class Note:
         self.pitch = pitch
         self.velocity = velocity
 
-
 class TempoEvent:
-    def __init__(self, tick, tempo):
-        self.tick = tick
-        self.tempo = tempo
-
+    tick   = 0
+    micros = 0
+    tempo  = 500000
 
 class TempoMap:
     tpqn = 480  # ticks per quarter note
-    tmap = [TempoEvent(0, 500000)]
+    tmap = []
+
+    def addTempo(tick, tempo):
+        tempoEvent = TempoEvent()
+        tempoEvent.tick = tick
+        tempoEvent.tempo = tempo
+        tempoEvent.micros = TempoMap.microsAtTick(tick)
+        TempoMap.tmap.append(tempoEvent)
 
     def tempoEventAtTick(tick):
+        savedTempoEvent = TempoEvent()
         for tempoEvent in TempoMap.tmap:
             if tempoEvent.tick > tick:
                 break
@@ -30,25 +36,14 @@ class TempoMap:
         return savedTempoEvent
 
     def microsAtTick(tick):
-        if tick == 0:
-            return 0
         tempoEvent = TempoMap.tempoEventAtTick(tick)
-        return (
-            TempoMap.microsAtTick(tempoEvent.tick)
-            + (tick - tempoEvent.tick) * tempoEvent.tempo / TempoMap.tpqn
-        )
+        return tempoEvent.micros + ((tick - tempoEvent.tick) * tempoEvent.tempo) / TempoMap.tpqn
 
 
 def process_midi(file, name):
     rows = []
     if name.lower().endswith(("mid", "midi", "kar")):
         rows = midi_to_csv(file).splitlines()
-
-        for row in rows:
-            if "Tempo" not in row:
-                continue
-            print(row)
-
     # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
     else:
         raise ValueError("Couldn't process " + name + " (invalid file extension).")
@@ -65,7 +60,7 @@ def process_midi(file, name):
         elif event == "Tempo":
             tick = int(cells[1])
             tempo = int(cells[3])
-            TempoMap.tmap.append(TempoEvent(tick, tempo))
+            TempoMap.addTempo(tick, tempo)
         elif event == "Note_on_c":
             velocity = int(cells[5])
             if velocity != 0:

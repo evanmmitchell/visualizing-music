@@ -49,7 +49,7 @@ function visualizeMidi() {
   let midiFile;
   try {
     midiFile = this.files[0];
-  } finally { }
+  } catch { }
   let formData = new FormData();
   formData.append("midiFile", midiFile)
   let xhr = new XMLHttpRequest();
@@ -90,7 +90,7 @@ function updateMusicVisualization() {
   // staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, endTime);
 
   let frustumSize = 10;
-  let canvas = rendrer.domElement;
+  let canvas = renderer.domElement;
   let aspectRatio = canvas.offsetWidth / canvas.offsetHeight;
   camera.left = frustumSize * aspectRatio / -2;
   camera.right = frustumSize * aspectRatio / 2;
