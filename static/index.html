@@ -6,9 +6,12 @@
     <title>Visualizing Music</title>
     <link rel="shortcut icon" type="image/x-icon" href="static/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="static/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <script type="text/javascript" src="static/three/three.min.js"></script>
     <script type="text/javascript" src="static/three/OrbitControls.js"></script>
+    <script type="text/javascript" src="static/midi-player-js/midiplayer.min.js"></script>
+    <script type="text/javascript" src="static/midi-player-js/soundfont-player.min.js"></script>
     <!-- <script type="text/javascript" src="static/three/OrthographicTrackballControls.js"></script> -->
   </head>
 
@@ -19,6 +22,18 @@
       <p>Upload a MIDI file: <input type="file" id="fileInput" accept=".mid,.midi,.kar" /></p>
 
       <h2 id="title"></h2>
+      <div id="player">
+        <ul class="player-controls">
+          <li id="player-play" ><i class="fa fa-play"></i></li>
+          <li id="player-pause"><i class="fa fa-pause"></i></li>
+          <li id="player-stop" ><i class="fa fa-stop"></i></li>
+        </ul>
+
+        <div class="time-controls">
+          <span id="startTime" class="time">0:00</span>
+          <span id="endTime" class="time">-0:00</span>
+        </div>
+      </div>
     </div>
 
     <script type="text/javascript" src="static/script.js"></script>

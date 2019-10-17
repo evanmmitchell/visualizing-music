@@ -24,3 +24,51 @@ canvas {
   height: 100%;
   z-index: -1;
 }
+
+
+#player {
+  width: 100%;
+  color: #ddd;
+  background: rgba(80, 80, 80, 0.2);
+}
+
+.player-controls {
+  line-height: 15px;
+  text-align: center;
+  float: right;
+}
+
+.player-controls>li {
+  margin: 0 auto;
+  display: inline-block;
+  width: 50px;
+  float: right;
+  cursor: pointer;
+  -webkit-transition: text-shadow 0.5s, color 0.2s;
+  -moz-transition:    text-shadow 0.5s, color 0.2s;
+  -o-transition:      text-shadow 0.5s, color 0.2s;
+  -ms-transition:     text-shadow 0.5s, color 0.2s;
+  transition:         text-shadow 0.5s, color 0.2s;
+}
+
+.player-controls>li:hover {
+  color: #f3f3f3;
+  text-shadow: 0px 0px 20px rgba(255, 255, 255, 0.8);
+}
+
+.player-controls > #player-pause {
+  display: none;
+}
+
+.time-controls {
+   float: left;
+   padding-left: 10px;
+   top: 50%;
+   margin: 0;
+   text-align: center;
+   transform: translate(0, -50%);
+}
+
+.time {
+  text-align: left;
+}

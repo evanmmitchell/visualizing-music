@@ -1,15 +1,33 @@
 let scene, camera, renderer, controls, directionalLight, notes, objectsInScene = [];
 const directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
 const COLORS = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
-
+let Player;
 
 initialize();
 animate();
 
-
 function initialize() {
   let fileInput = document.getElementById("fileInput");
-  fileInput.addEventListener("change", visualizeMidi);
+  fileInput.addEventListener("change", function (event) {
+    let midiFile = event.target.files[0];
+    if (Player) {
+      stopPlayer();
+    }
+    visualizeMidi(midiFile);
+    loadPlayer(midiFile);
+  });
+
+  playButton = document.getElementById("player-play");
+  playButton.addEventListener("click", function() {
+    // if first time, initialize
+    togglePausePlay();
+  });
+
+  pauseButton = document.getElementById("player-pause");
+  pauseButton.addEventListener("click", togglePausePlay);
+
+  stopButton = document.getElementById("player-stop");
+  stopButton.addEventListener("click", stopPlayer);
 
   renderer = new THREE.WebGLRenderer({ alpha: true });
   let canvas = renderer.domElement;
@@ -45,11 +63,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-function visualizeMidi() {
-  let midiFile;
-  try {
-    midiFile = this.files[0];
-  } catch { }
+function visualizeMidi(midiFile) {
   let formData = new FormData();
   formData.append("midiFile", midiFile)
   let xhr = new XMLHttpRequest();
@@ -65,6 +79,29 @@ function visualizeMidi() {
   };
   xhr.send(formData);
   return;
+}
+
+function loadPlayer(midiFile) {
+  let AudioContext = window.AudioContext || window.webkitAudioContext || false;
+  let ac = new AudioContext || new webkitAudioContext;
+  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_guitar_nylon-mp3.js').then(function(instrument) {
+    Player = new MidiPlayer.Player(function(event) {
+      if (event.name == 'Note on') {
+        instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
+      }
+    });
+
+  	if (midiFile) {
+      let reader  = new FileReader();
+      reader.readAsArrayBuffer(midiFile);
+      reader.addEventListener("load", function () {
+        Player.loadArrayBuffer(reader.result);
+      }, false);
+    } else {
+      // doesn't work for default file
+      Player.loadFile("sample-midi/happy-birthday-simplified.mid");
+    }
+  });
 }
 
 function updateMusicVisualization() {
@@ -158,5 +195,23 @@ function staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, e
     sphere.receiveShadow = true;
     scene.add(sphere);
     objectsInScene.push(sphere);
+  }
+}
+
+function stopPlayer() {
+  Player.stop();
+  playButton.style.display = "inline-block";
+  pauseButton.style.display = "none";
+}
+
+function togglePausePlay() {
+  if (Player.isPlaying()) {
+    playButton.style.display = "inline-block";
+    pauseButton.style.display = "none";
+    Player.pause();
+  } else {
+    pauseButton.style.display = "inline-block";
+    playButton.style.display = "none";
+    Player.play();
   }
 }
