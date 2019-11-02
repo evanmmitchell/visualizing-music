@@ -1,11 +1,14 @@
 import sys
 from flask import Flask, request, jsonify
+from flask_talisman import Talisman
 
 sys.path.append("./python")
 from midi_process import process_midi
 
 
 app = Flask(__name__)
+Talisman(app)
+
 DEFAULT_MIDI_PATH = "sample-midi/happy-birthday-simplified.mid"
 
 
@@ -21,7 +24,8 @@ def jsonify_midi():
         name = file.filename
         title, notes = process_midi(file, name)
     except Exception as e:
-        # sys.stderr.write(str(e) + "\n")
+        # if app.debug == True:
+        #     sys.stderr.write(str(e) + "\n")
         file = DEFAULT_MIDI_PATH
         name = DEFAULT_MIDI_PATH.split("/")[-1]
         title, notes = process_midi(file, name)
