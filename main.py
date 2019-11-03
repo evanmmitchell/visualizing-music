@@ -30,7 +30,3 @@ def jsonify_midi():
         name = DEFAULT_MIDI_PATH.split("/")[-1]
         title, notes = process_midi(file, name)
     return jsonify(title, notes)
-
-
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8888, debug=True)
