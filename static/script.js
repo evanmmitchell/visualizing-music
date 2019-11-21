@@ -70,8 +70,8 @@ function visualizeMidi() {
     if (xhr.readyState == 4 && xhr.status == "200") {
       let response = JSON.parse(xhr.responseText);
       let title = document.getElementById("title");
-      title.textContent = response[0];
-      notes = response[1];
+      title.textContent = response["title"];
+      notes = response["notes"];
       updateMusicVisualization();
     }
   };

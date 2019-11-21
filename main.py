@@ -1,5 +1,5 @@
 import sys
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_talisman import Talisman
 
 sys.path.append("./python")
@@ -24,9 +24,9 @@ def jsonify_midi():
         name = file.filename
         title, notes = process_midi(file, name)
     except Exception as e:
-        # if app.debug == True:
+        # if app.debug:
         #     sys.stderr.write(str(e) + "\n")
         file = DEFAULT_MIDI_PATH
         name = DEFAULT_MIDI_PATH.split("/")[-1]
         title, notes = process_midi(file, name)
-    return jsonify(title, notes)
+    return {"title": title, "notes": notes}
