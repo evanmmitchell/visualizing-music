@@ -10,18 +10,13 @@ function initialize() {
   let fileInput = document.getElementById("fileInput");
   fileInput.addEventListener("change", function (event) {
     let midiFile = event.target.files[0];
-    if (Player) {
-      stopPlayer();
-    }
+    stopPlayer();
     visualizeMidi(midiFile);
     loadPlayer(midiFile);
   });
 
   playButton = document.getElementById("player-play");
-  playButton.addEventListener("click", function() {
-    // if first time, initialize
-    togglePausePlay();
-  });
+  playButton.addEventListener("click", togglePausePlay);
 
   pauseButton = document.getElementById("player-pause");
   pauseButton.addEventListener("click", togglePausePlay);
@@ -50,6 +45,7 @@ function initialize() {
   controls = new THREE.OrbitControls(camera, canvas);
 
   visualizeMidi();
+  loadPlayer();
 }
 
 function animate() {
@@ -78,29 +74,29 @@ function visualizeMidi(midiFile) {
     }
   };
   xhr.send(formData);
-  return;
 }
 
 function loadPlayer(midiFile) {
   let AudioContext = window.AudioContext || window.webkitAudioContext || false;
   let ac = new AudioContext || new webkitAudioContext;
-  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_guitar_nylon-mp3.js').then(function(instrument) {
+  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js').then(function(instrument) {
     Player = new MidiPlayer.Player(function(event) {
       if (event.name == 'Note on') {
         instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
       }
     });
 
-  	if (midiFile) {
-      let reader  = new FileReader();
-      reader.readAsArrayBuffer(midiFile);
-      reader.addEventListener("load", function () {
-        Player.loadArrayBuffer(reader.result);
-      }, false);
-    } else {
-      // doesn't work for default file
-      Player.loadFile("sample-midi/happy-birthday-simplified.mid");
-    }
+    let formData = new FormData();
+    formData.append("midiFile", midiFile)
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/player-midi", true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState == 4 && xhr.status == "200") {
+        let arrayBuffer = base64DecToArr(xhr.responseText).buffer;
+        Player.loadArrayBuffer(arrayBuffer);
+      }
+    };
+    xhr.send(formData);
   });
 }
 
