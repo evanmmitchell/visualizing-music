@@ -1,4 +1,4 @@
-let scene, camera, renderer, controls, directionalLight, notes, objectsInScene = [];
+let scene, camera, renderer, controls, directionalLight, objectsInScene = [];
 const directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
 const COLORS = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
 let Player;
@@ -11,8 +11,7 @@ function initialize() {
   fileInput.addEventListener("change", function (event) {
     let midiFile = event.target.files[0];
     stopPlayer();
-    visualizeMidi(midiFile);
-    loadPlayer(midiFile);
+    loadMidi(midiFile);
   });
 
   playButton = document.getElementById("player-play");
@@ -44,8 +43,7 @@ function initialize() {
   // TODO: change to trackball control
   controls = new THREE.OrbitControls(camera, canvas);
 
-  visualizeMidi();
-  loadPlayer();
+  loadMidi();
 }
 
 function animate() {
@@ -59,7 +57,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-function visualizeMidi(midiFile) {
+function loadMidi(midiFile) {
   let formData = new FormData();
   formData.append("midiFile", midiFile)
   let xhr = new XMLHttpRequest();
@@ -69,14 +67,18 @@ function visualizeMidi(midiFile) {
       let response = JSON.parse(xhr.responseText);
       let title = document.getElementById("title");
       title.textContent = response[0];
-      notes = response[1];
-      updateMusicVisualization();
+
+      let notes = response[1];
+      loadVisualization(notes);
+
+      let midiFileContents = response[2];
+      loadPlayer(midiFileContents);
     }
   };
   xhr.send(formData);
 }
 
-function loadPlayer(midiFile) {
+function loadPlayer(midiFileContents) {
   let AudioContext = window.AudioContext || window.webkitAudioContext || false;
   let ac = new AudioContext || new webkitAudioContext;
   Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js').then(function(instrument) {
@@ -85,22 +87,12 @@ function loadPlayer(midiFile) {
         instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
       }
     });
-
-    let formData = new FormData();
-    formData.append("midiFile", midiFile)
-    let xhr = new XMLHttpRequest();
-    xhr.open("POST", "/player-midi", true);
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState == 4 && xhr.status == "200") {
-        let arrayBuffer = base64DecToArr(xhr.responseText).buffer;
-        Player.loadArrayBuffer(arrayBuffer);
-      }
-    };
-    xhr.send(formData);
+    let arrayBuffer = base64DecToArr(midiFileContents).buffer;
+    Player.loadArrayBuffer(arrayBuffer);
   });
 }
 
-function updateMusicVisualization() {
+function loadVisualization(notes) {
   let minPitch = Infinity, maxPitch = -Infinity;
   let minTrack = Infinity, maxTrack = -Infinity;
   let startTime = Infinity, endTime = -Infinity;
@@ -119,8 +111,8 @@ function updateMusicVisualization() {
   }
 
   // TODO: Set camera's z position instead of passing minTrack
-  staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime);
-  // staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, endTime);
+  staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime);
+  // staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime);
 
   let frustumSize = 10;
   let canvas = renderer.domElement;
@@ -136,7 +128,7 @@ function updateMusicVisualization() {
   controls.update()
 }
 
-function staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime) {
+function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime) {
   let pitchDisplacement = minPitch + (maxPitch - minPitch) / 2;
   let xScaleFactor = 1.5;
   let yScaleFactor = 0.25;
@@ -171,7 +163,7 @@ function staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime)
   }
 }
 
-function staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, endTime) {
+function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {
   let durationScaleFactor = 1.5;
   let radiusScaleFactor = 100 / (maxPitch - minPitch);
   let thetaScaleFactor = 2 * Math.PI / (endTime - startTime);

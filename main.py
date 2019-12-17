@@ -20,24 +20,17 @@ def jsonify_midi():
     try:
         file = request.files["midiFile"]
         name = file.filename
-        title, notes = process_midi(file, name)
+        contents = file.read()
+        file.seek(0)
     except Exception as e:
         # sys.stderr.write(str(e) + "\n")
         file = DEFAULT_MIDI_PATH
         name = DEFAULT_MIDI_PATH.split("/")[-1]
-        title, notes = process_midi(file, name)
-    return jsonify(title, notes)
-
-
-@app.route("/player-midi", methods=["POST"])
-def player_midi():
-    try:
-        file = request.files["midiFile"]
-        contents = file.read()
-    except Exception as e:
-        with open(DEFAULT_MIDI_PATH, 'rb') as file:
-            contents = file.read()
-    return base64.b64encode(contents)
+        with open(DEFAULT_MIDI_PATH, 'rb') as input_file:
+            contents = input_file.read()
+    title, notes = process_midi(file, name)
+    base64_contents = base64.b64encode(contents).decode("utf-8")
+    return jsonify(title, notes, base64_contents)
 
 
 if __name__ == "__main__":
