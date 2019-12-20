@@ -2,9 +2,6 @@ import sys
 import base64
 from flask import Flask, request
 from flask_talisman import Talisman
-
-
-sys.path.append("./python")
 from midi_process import process_midi
 
 
