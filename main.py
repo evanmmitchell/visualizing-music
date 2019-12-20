@@ -1,7 +1,7 @@
 import sys
-from flask import Flask, request, jsonify
-from flask_talisman import Talisman
 import base64
+from flask import Flask, request
+from flask_talisman import Talisman
 
 
 sys.path.append("./python")
@@ -9,7 +9,15 @@ from midi_process import process_midi
 
 
 app = Flask(__name__)
-Talisman(app)
+
+csp = {
+    "default-src": [
+        '\'self\'',
+        "https://cdnjs.cloudflare.com",
+        "https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js"
+    ]
+}
+Talisman(app, content_security_policy=csp)
 
 DEFAULT_MIDI_PATH = "sample-midi/happy-birthday-simplified.mid"
 

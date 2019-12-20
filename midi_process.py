@@ -1,5 +1,5 @@
 import sys
-from midicsv import midi_to_csv
+from py_midicsv import midi_to_csv
 
 
 class Note:
@@ -46,7 +46,7 @@ class TempoMap:
 def process_midi(file, name):
     rows = []
     if name.lower().endswith(("mid", "midi", "kar")):
-        rows = midi_to_csv(file).splitlines()
+        rows = "".join(midi_to_csv(file)).splitlines()
     # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
     else:
         raise ValueError("Couldn't process " + name + " (invalid file extension).")
