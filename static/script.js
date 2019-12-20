@@ -35,7 +35,7 @@ function initialize() {
   renderer = new THREE.WebGLRenderer({ alpha: true });
   let canvas = renderer.domElement;
   document.body.appendChild(canvas);
-  renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
 
   scene = new THREE.Scene();
@@ -47,10 +47,22 @@ function initialize() {
   directionalLight.castShadow = true;
   scene.add(directionalLight);
 
-  camera = new THREE.OrthographicCamera()
+  let frustumSize = 10;
+  let aspectRatio = window.innerWidth / window.innerHeight;
+  camera = new THREE.OrthographicCamera(frustumSize * aspectRatio / -2, frustumSize * aspectRatio / 2, frustumSize / 2, frustumSize / -2);
 
   // TODO: change to trackball control
   controls = new THREE.OrbitControls(camera, canvas);
+
+  window.addEventListener("resize", function () {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    aspectRatio = window.innerWidth / window.innerHeight;
+    camera.left = frustumSize * aspectRatio / -2;
+    camera.right = frustumSize * aspectRatio / 2;
+    camera.top = frustumSize / 2;
+    camera.bottom = frustumSize / -2;
+    camera.updateProjectionMatrix();
+  });
 
   loadMidi();
 }
@@ -77,13 +89,14 @@ function loadMidi(midiFile) {
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == "200") {
       let response = JSON.parse(xhr.responseText);
-      let title = document.getElementById("title");
-      title.textContent = response[0];
 
-      let notes = response[1];
+      let title = document.getElementById("title");
+      title.textContent = response["title"];
+
+      let notes = response["notes"];
       loadVisualization(notes);
 
-      let midiFileContents = response[2];
+      let midiFileContents = response["contents"];
       loadPlayer(midiFileContents);
     }
   };
@@ -135,15 +148,8 @@ function loadVisualization(notes) {
   staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime);
   // staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime);
 
-  let frustumSize = 10;
-  let canvas = renderer.domElement;
-  let aspectRatio = canvas.offsetWidth / canvas.offsetHeight;
-  camera.left = frustumSize * aspectRatio / -2;
-  camera.right = frustumSize * aspectRatio / 2;
-  camera.top = frustumSize / 2;
-  camera.bottom = frustumSize / -2;
-  camera.near = -50;
-  camera.far = 50;  // TODO: Variable near/far with maxTrack
+  camera.near = -500;
+  camera.far = 500;  // TODO: Variable near/far with maxTrack
   camera.updateProjectionMatrix();
   camera.position.set(0, 0, 3);
   controls.update()
@@ -209,7 +215,7 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
     let theta = (note.start - startTime) * thetaScaleFactor;
     let depth = -note.track + minTrack;
     sphere.position.setFromCylindricalCoords(radius, theta, depth);
-    sphere.rotateY(Math.PI / 2); //Hopefully doesnt just rotate sphere
+    sphere.rotateY(Math.PI / 2); //Hopefully doesn't just rotate sphere
     sphere.castShadow = true;
     sphere.receiveShadow = true;
     scene.add(sphere);

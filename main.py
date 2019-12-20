@@ -1,12 +1,16 @@
 import sys
 from flask import Flask, request, jsonify
+from flask_talisman import Talisman
 import base64
+
 
 sys.path.append("./python")
 from midi_process import process_midi
 
 
 app = Flask(__name__)
+Talisman(app)
+
 DEFAULT_MIDI_PATH = "sample-midi/happy-birthday-simplified.mid"
 
 
@@ -23,15 +27,12 @@ def jsonify_midi():
         contents = file.read()
         file.seek(0)
     except Exception as e:
-        # sys.stderr.write(str(e) + "\n")
+        # if app.debug:
+        #     sys.stderr.write(str(e) + "\n")
         file = DEFAULT_MIDI_PATH
         name = DEFAULT_MIDI_PATH.split("/")[-1]
         with open(DEFAULT_MIDI_PATH, 'rb') as input_file:
             contents = input_file.read()
     title, notes = process_midi(file, name)
     base64_contents = base64.b64encode(contents).decode("utf-8")
-    return jsonify(title, notes, base64_contents)
-
-
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8888, debug=True)
+    return {"title": title, "notes": notes, "contents": base64_contents}
