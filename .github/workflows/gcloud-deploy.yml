@@ -12,15 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: GCP Authenticate
-        uses: actions/gcloud/auth@master
-        env:
-          GCLOUD_AUTH: ${{ secrets.GCLOUD_AUTH }}
-      - name: GCP Set Project
-        uses: actions/gcloud/cli@master
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          args: config set project ${{ secrets.GCLOUD_PROJECT_ID }}
-      - name: GCP App Deploy
-        uses: actions/gcloud/cli@master
-        with:
-          args: app deploy app.yaml
+          version: '270.0.0'
+          service_account_key: ${{ secrets.GCLOUD_AUTH }}
+      - run: gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
+      - run: gcloud app deploy app.yaml
