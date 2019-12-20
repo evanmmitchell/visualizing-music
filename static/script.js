@@ -1,26 +1,35 @@
 let scene, camera, renderer, controls, directionalLight, objectsInScene = [];
 const directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
 const COLORS = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
-let Player;
+let player;
 
 initialize();
 animate();
 
 function initialize() {
+  let slider = document.getElementById("slider");
+  slider.addEventListener("input", function (event) {
+    let wasPlaying = player.isPlaying();
+    player.skipToPercent(this.value);
+    setCurrentTime();
+    if (wasPlaying) {
+      player.play();
+    }
+  });
+
   let fileInput = document.getElementById("fileInput");
   fileInput.addEventListener("change", function (event) {
     let midiFile = event.target.files[0];
-    stopPlayer();
     loadMidi(midiFile);
   });
 
-  playButton = document.getElementById("player-play");
+  let playButton = document.getElementById("play");
   playButton.addEventListener("click", togglePausePlay);
 
-  pauseButton = document.getElementById("player-pause");
+  let pauseButton = document.getElementById("pause");
   pauseButton.addEventListener("click", togglePausePlay);
 
-  stopButton = document.getElementById("player-stop");
+  let stopButton = document.getElementById("stop");
   stopButton.addEventListener("click", stopPlayer);
 
   renderer = new THREE.WebGLRenderer({ alpha: true });
@@ -48,6 +57,9 @@ function initialize() {
 
 function animate() {
   requestAnimationFrame(animate);
+  if (player) {
+    setCurrentTime();
+  }
 
   directionalLight.position.copy(camera.position);
   directionalLight.position.add(directionalLightDisplacementVector);
@@ -81,14 +93,23 @@ function loadMidi(midiFile) {
 function loadPlayer(midiFileContents) {
   let AudioContext = window.AudioContext || window.webkitAudioContext || false;
   let ac = new AudioContext || new webkitAudioContext;
-  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js').then(function(instrument) {
-    Player = new MidiPlayer.Player(function(event) {
+  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js').then(function (instrument) {
+    if (player) {
+      stopPlayer();
+    }
+    player = new MidiPlayer.Player(function (event) {
       if (event.name == 'Note on') {
         instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
       }
     });
     let arrayBuffer = base64DecToArr(midiFileContents).buffer;
-    Player.loadArrayBuffer(arrayBuffer);
+    player.loadArrayBuffer(arrayBuffer);
+
+    let endTime = document.getElementById("endTime");
+    let songTime = player.getSongTime();
+    let minutes = Math.floor(songTime / 60);
+    let seconds = Math.round(songTime % 60);
+    endTime.textContent = minutes + ":" + seconds;
   });
 }
 
@@ -126,6 +147,16 @@ function loadVisualization(notes) {
   camera.updateProjectionMatrix();
   camera.position.set(0, 0, 3);
   controls.update()
+}
+
+function setCurrentTime() {
+  let startTime = document.getElementById("startTime");
+  let currentTime = Math.round(player.getSongTime()) - player.getSongTimeRemaining();
+  let minutes = Math.floor(currentTime / 60);
+  let seconds = currentTime % 60;
+  startTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "" ) + seconds;
+  let slider = document.getElementById("slider");
+  slider.value = 100 - player.getSongPercentRemaining();
 }
 
 function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime) {
@@ -186,20 +217,26 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
   }
 }
 
-function stopPlayer() {
-  Player.stop();
-  playButton.style.display = "inline-block";
-  pauseButton.style.display = "none";
-}
-
 function togglePausePlay() {
-  if (Player.isPlaying()) {
+  let playButton = document.getElementById("play");
+  let pauseButton = document.getElementById("pause");
+
+  if (player.isPlaying()) {
     playButton.style.display = "inline-block";
     pauseButton.style.display = "none";
-    Player.pause();
+    player.pause();
   } else {
     pauseButton.style.display = "inline-block";
     playButton.style.display = "none";
-    Player.play();
+    player.play();
   }
+}
+
+function stopPlayer() {
+  let playButton = document.getElementById("play");
+  let pauseButton = document.getElementById("pause");
+
+  player.stop();
+  playButton.style.display = "inline-block";
+  pauseButton.style.display = "none";
 }
