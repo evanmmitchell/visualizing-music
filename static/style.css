@@ -2,18 +2,81 @@ body {
   background-color: #b8e6ed;
 }
 
-div {
+#header {
   position: fixed;
   text-align: center;
   margin-left: 50%;
   transform: translate(-50%, 0);
 }
 
-footer {
-  position: fixed;
-  bottom: 5px;
+#player {
+  height: 35px;
+  width: 400px;
   margin-left: 50%;
   transform: translate(-50%, 0);
+  color: #ddd;
+  background: rgba(80, 80, 80, 0.2);
+}
+
+#play, #pause, #stop {
+  top: 50%;
+  transform: translate(0, 50%);
+  margin: auto;
+  display: inline-block;
+  width: 40px;
+  float: right;
+  cursor: pointer;
+  -webkit-transition: text-shadow 0.5s, color 0.2s;
+  -moz-transition:    text-shadow 0.5s, color 0.2s;
+  -o-transition:      text-shadow 0.5s, color 0.2s;
+  -ms-transition:     text-shadow 0.5s, color 0.2s;
+  transition:         text-shadow 0.5s, color 0.2s;
+  color: white;
+}
+
+#play:hover, #pause:hover, #stop:hover {
+  text-shadow: 0px 0px 20px rgba(255, 255, 255, 0.8);
+}
+
+#pause {
+  display: none;
+}
+
+#time {
+  width: 300px;
+  top: 50%;
+  transform: translate(0, 50%);
+  color: white;
+}
+
+#slider {
+  -webkit-appearance: none;
+  width: 60%;
+  height: 10px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+#slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+#slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
 }
 
 canvas {
@@ -21,4 +84,11 @@ canvas {
   left: 0;
   top: 0;
   z-index: -1;
+}
+
+footer {
+  position: fixed;
+  bottom: 5px;
+  margin-left: 50%;
+  transform: translate(-50%, 0);
 }

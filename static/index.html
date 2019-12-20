@@ -9,19 +9,33 @@
 
     <link rel="shortcut icon" type="image/x-icon" href="static/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="static/style.css" />
-
-    <script type="text/javascript" src="static/three/three.min.js"></script>
-    <script type="text/javascript" src="static/three/OrbitControls.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script type="text/javascript" src="static/lib/three/three.min.js"></script>
+    <script type="text/javascript" src="static/lib/three/OrbitControls.js"></script>
     <!-- <script type="text/javascript" src="static/three/OrthographicTrackballControls.js"></script> -->
+    <script type="text/javascript" src="static/lib/midi-player-js/midiplayer.min.js"></script>
+    <script type="text/javascript" src="static/lib/midi-player-js/soundfont-player.min.js"></script>
+    <script type="text/javascript" src="static/lib/base64.js"></script>
   </head>
 
   <body>
-    <div>
-      <h1>Visualizing Music</h1>
+    <div id="header">
+      <!-- <h1>Visualizing Music</h1> -->
 
       <p>Upload a MIDI file: <input type="file" id="fileInput" accept=".mid,.midi,.kar" /></p>
 
       <h2 id="title"></h2>
+
+      <div id="player">
+        <span id="play"><i class="fa fa-play"></i></span>
+        <span id="pause"><i class="fa fa-pause"></i></span>
+        <span id="stop"><i class="fa fa-stop"></i></span>
+        <div id="time">
+          <span id="startTime">0:00</span>
+          <input type="range" min="0" max="100" value="0" id="slider">
+          <span id="endTime">0:00</span>
+        </div>
+      </div>
     </div>
 
     <script type="text/javascript" src="static/script.js"></script>

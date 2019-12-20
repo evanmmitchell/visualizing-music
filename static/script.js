@@ -1,15 +1,36 @@
-let scene, camera, renderer, controls, directionalLight, notes, objectsInScene = [];
+let scene, camera, renderer, controls, directionalLight, objectsInScene = [];
 const directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
 const COLORS = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
-
+let player;
 
 initialize();
 animate();
 
-
 function initialize() {
+  let slider = document.getElementById("slider");
+  slider.addEventListener("input", function (event) {
+    let wasPlaying = player.isPlaying();
+    player.skipToPercent(this.value);
+    setCurrentTime();
+    if (wasPlaying) {
+      player.play();
+    }
+  });
+
   let fileInput = document.getElementById("fileInput");
-  fileInput.addEventListener("change", visualizeMidi);
+  fileInput.addEventListener("change", function (event) {
+    let midiFile = event.target.files[0];
+    loadMidi(midiFile);
+  });
+
+  let playButton = document.getElementById("play");
+  playButton.addEventListener("click", togglePausePlay);
+
+  let pauseButton = document.getElementById("pause");
+  pauseButton.addEventListener("click", togglePausePlay);
+
+  let stopButton = document.getElementById("stop");
+  stopButton.addEventListener("click", stopPlayer);
 
   renderer = new THREE.WebGLRenderer({ alpha: true });
   let canvas = renderer.domElement;
@@ -43,11 +64,14 @@ function initialize() {
     camera.updateProjectionMatrix();
   });
 
-  visualizeMidi();
+  loadMidi();
 }
 
 function animate() {
   requestAnimationFrame(animate);
+  if (player) {
+    setCurrentTime();
+  }
 
   directionalLight.position.copy(camera.position);
   directionalLight.position.add(directionalLightDisplacementVector);
@@ -57,11 +81,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-function visualizeMidi() {
-  let midiFile;
-  try {
-    midiFile = this.files[0];
-  } catch { }
+function loadMidi(midiFile) {
   let formData = new FormData();
   formData.append("midiFile", midiFile)
   let xhr = new XMLHttpRequest();
@@ -69,17 +89,44 @@ function visualizeMidi() {
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == "200") {
       let response = JSON.parse(xhr.responseText);
+
       let title = document.getElementById("title");
       title.textContent = response["title"];
-      notes = response["notes"];
-      updateMusicVisualization();
+
+      let notes = response["notes"];
+      loadVisualization(notes);
+
+      let midiFileContents = response["contents"];
+      loadPlayer(midiFileContents);
     }
   };
   xhr.send(formData);
-  return;
 }
 
-function updateMusicVisualization() {
+function loadPlayer(midiFileContents) {
+  let AudioContext = window.AudioContext || window.webkitAudioContext || false;
+  let ac = new AudioContext || new webkitAudioContext;
+  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js').then(function (instrument) {
+    if (player) {
+      stopPlayer();
+    }
+    player = new MidiPlayer.Player(function (event) {
+      if (event.name == 'Note on') {
+        instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
+      }
+    });
+    let arrayBuffer = base64DecToArr(midiFileContents).buffer;
+    player.loadArrayBuffer(arrayBuffer);
+
+    let endTime = document.getElementById("endTime");
+    let songTime = player.getSongTime();
+    let minutes = Math.floor(songTime / 60);
+    let seconds = Math.round(songTime % 60);
+    endTime.textContent = minutes + ":" + seconds;
+  });
+}
+
+function loadVisualization(notes) {
   let minPitch = Infinity, maxPitch = -Infinity;
   let minTrack = Infinity, maxTrack = -Infinity;
   let startTime = Infinity, endTime = -Infinity;
@@ -98,8 +145,8 @@ function updateMusicVisualization() {
   }
 
   // TODO: Set camera's z position instead of passing minTrack
-  staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime);
-  // staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, endTime);
+  staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime);
+  // staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime);
 
   camera.near = -500;
   camera.far = 500;  // TODO: Variable near/far with maxTrack
@@ -108,7 +155,17 @@ function updateMusicVisualization() {
   controls.update()
 }
 
-function staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime) {
+function setCurrentTime() {
+  let startTime = document.getElementById("startTime");
+  let currentTime = Math.round(player.getSongTime()) - player.getSongTimeRemaining();
+  let minutes = Math.floor(currentTime / 60);
+  let seconds = currentTime % 60;
+  startTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "" ) + seconds;
+  let slider = document.getElementById("slider");
+  slider.value = 100 - player.getSongPercentRemaining();
+}
+
+function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime) {
   let pitchDisplacement = minPitch + (maxPitch - minPitch) / 2;
   let xScaleFactor = 1.5;
   let yScaleFactor = 0.25;
@@ -143,7 +200,7 @@ function staticRectangularVisualization(minPitch, maxPitch, minTrack, startTime)
   }
 }
 
-function staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, endTime) {
+function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {
   let durationScaleFactor = 1.5;
   let radiusScaleFactor = 100 / (maxPitch - minPitch);
   let thetaScaleFactor = 2 * Math.PI / (endTime - startTime);
@@ -164,4 +221,28 @@ function staticSphericalVisualization(minPitch, maxPitch, minTrack, startTime, e
     scene.add(sphere);
     objectsInScene.push(sphere);
   }
+}
+
+function togglePausePlay() {
+  let playButton = document.getElementById("play");
+  let pauseButton = document.getElementById("pause");
+
+  if (player.isPlaying()) {
+    playButton.style.display = "inline-block";
+    pauseButton.style.display = "none";
+    player.pause();
+  } else {
+    pauseButton.style.display = "inline-block";
+    playButton.style.display = "none";
+    player.play();
+  }
+}
+
+function stopPlayer() {
+  let playButton = document.getElementById("play");
+  let pauseButton = document.getElementById("pause");
+
+  player.stop();
+  playButton.style.display = "inline-block";
+  pauseButton.style.display = "none";
 }
