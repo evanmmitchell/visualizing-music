@@ -16,5 +16,4 @@ jobs:
         with:
           version: '270.0.0'
           service_account_key: ${{ secrets.GCLOUD_AUTH }}
-      - run: gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
-      - run: gcloud app deploy app.yaml
+      - run: gcloud app deploy --project ${{ secrets.GCLOUD_PROJECT_ID }}
