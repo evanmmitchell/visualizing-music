@@ -11,7 +11,7 @@ csp = {
     "default-src": [
         '\'self\'',
         "https://cdnjs.cloudflare.com",
-        "https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js"
+        "https://gleitz.github.io"
     ]
 }
 Talisman(app, content_security_policy=csp)

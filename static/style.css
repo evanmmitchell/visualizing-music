@@ -16,13 +16,13 @@ body {
   transform: translate(-50%, 0);
   color: #ddd;
   background: rgba(80, 80, 80, 0.2);
+  display: none;
 }
 
 #play, #pause, #stop {
   top: 50%;
   transform: translate(0, 50%);
   margin: auto;
-  display: inline-block;
   width: 40px;
   float: right;
   cursor: pointer;
@@ -34,12 +34,12 @@ body {
   color: white;
 }
 
-#play:hover, #pause:hover, #stop:hover {
-  text-shadow: 0px 0px 20px rgba(255, 255, 255, 0.8);
-}
-
 #pause {
   display: none;
+}
+
+#play:hover, #pause:hover, #stop:hover {
+  text-shadow: 0px 0px 20px rgba(255, 255, 255, 0.8);
 }
 
 #time {

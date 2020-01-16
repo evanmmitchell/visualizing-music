@@ -7,31 +7,6 @@ initialize();
 animate();
 
 function initialize() {
-  let slider = document.getElementById("slider");
-  slider.addEventListener("input", function (event) {
-    let wasPlaying = player.isPlaying();
-    player.skipToPercent(this.value);
-    setCurrentTime();
-    if (wasPlaying) {
-      player.play();
-    }
-  });
-
-  let fileInput = document.getElementById("fileInput");
-  fileInput.addEventListener("change", function (event) {
-    let midiFile = event.target.files[0];
-    loadMidi(midiFile);
-  });
-
-  let playButton = document.getElementById("play");
-  playButton.addEventListener("click", togglePausePlay);
-
-  let pauseButton = document.getElementById("pause");
-  pauseButton.addEventListener("click", togglePausePlay);
-
-  let stopButton = document.getElementById("stop");
-  stopButton.addEventListener("click", stopPlayer);
-
   renderer = new THREE.WebGLRenderer({ alpha: true });
   let canvas = renderer.domElement;
   document.body.appendChild(canvas);
@@ -64,14 +39,47 @@ function initialize() {
     camera.updateProjectionMatrix();
   });
 
+  let fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", function (event) {
+    if (player) {
+      let playerControls = document.getElementById("player");
+      playerControls.style.display = "none";
+      player.stop();
+    }
+
+    let midiFile = event.target.files[0];
+    loadMidi(midiFile);
+  });
+
+  let slider = document.getElementById("slider");
+  slider.addEventListener("input", function () {
+    let wasPlaying = player.isPlaying();
+    player.skipToPercent(this.value);
+    if (wasPlaying) {
+      player.play();
+    } else {
+      setCurrentTime();
+    }
+  });
+
+  let playButton = document.getElementById("play");
+  playButton.addEventListener("click", function () {
+    player.play();
+  });
+  let pauseButton = document.getElementById("pause");
+  pauseButton.addEventListener("click", function () {
+    player.pause();
+  });
+  let stopButton = document.getElementById("stop");
+  stopButton.addEventListener("click", function () {
+    player.stop();
+  });
+
   loadMidi();
 }
 
 function animate() {
   requestAnimationFrame(animate);
-  if (player) {
-    setCurrentTime();
-  }
 
   directionalLight.position.copy(camera.position);
   directionalLight.position.add(directionalLightDisplacementVector);
@@ -89,41 +97,13 @@ function loadMidi(midiFile) {
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == "200") {
       let response = JSON.parse(xhr.responseText);
-
       let title = document.getElementById("title");
       title.textContent = response["title"];
-
-      let notes = response["notes"];
-      loadVisualization(notes);
-
-      let midiFileContents = response["contents"];
-      loadPlayer(midiFileContents);
+      loadVisualization(response["notes"]);
+      loadPlayer(response["contents"]);
     }
   };
   xhr.send(formData);
-}
-
-function loadPlayer(midiFileContents) {
-  let AudioContext = window.AudioContext || window.webkitAudioContext || false;
-  let ac = new AudioContext || new webkitAudioContext;
-  Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3.js').then(function (instrument) {
-    if (player) {
-      stopPlayer();
-    }
-    player = new MidiPlayer.Player(function (event) {
-      if (event.name == 'Note on') {
-        instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
-      }
-    });
-    let arrayBuffer = base64DecToArr(midiFileContents).buffer;
-    player.loadArrayBuffer(arrayBuffer);
-
-    let endTime = document.getElementById("endTime");
-    let songTime = player.getSongTime();
-    let minutes = Math.floor(songTime / 60);
-    let seconds = Math.round(songTime % 60);
-    endTime.textContent = minutes + ":" + seconds;
-  });
 }
 
 function loadVisualization(notes) {
@@ -155,14 +135,52 @@ function loadVisualization(notes) {
   controls.update()
 }
 
-function setCurrentTime() {
-  let startTime = document.getElementById("startTime");
-  let currentTime = Math.round(player.getSongTime()) - player.getSongTimeRemaining();
-  let minutes = Math.floor(currentTime / 60);
-  let seconds = currentTime % 60;
-  startTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "" ) + seconds;
-  let slider = document.getElementById("slider");
-  slider.value = 100 - player.getSongPercentRemaining();
+function loadPlayer(midiFileContents) {
+  let AudioContext = window.AudioContext || window.webkitAudioContext || false;
+  let ac = new AudioContext || new webkitAudioContext;
+  Soundfont.instrument(ac, "acoustic_grand_piano").then(function (instrument) {
+    player = new MidiPlayer.Player(function (event) {
+      if (event.name == "Note on") {
+        instrument.play(event.noteName, ac.currentTime, { gain: event.velocity / 100 });
+      } else if (event.name == "Note off") {
+        instrument.play(event.noteName, ac.currentTime, { gain: 0 });
+      }
+    });
+    player.on("fileLoaded", function () {
+      let songTime = player.getSongTime();
+      let minutes = Math.floor(songTime / 60);
+      let seconds = Math.round(songTime % 60);
+      let endTime = document.getElementById("endTime");
+      endTime.textContent = minutes + ":" + seconds;
+
+      let playerControls = document.getElementById("player");
+      playerControls.style.display = "block";
+    });
+    player.on("playing", function () {
+      setCurrentTime();
+    });
+    player.on("stop", function () {
+      setCurrentTime();
+    });
+
+    let playButton = document.getElementById("play");
+    let pauseButton = document.getElementById("pause");
+    player.on("play", function () {
+      playButton.style.display = "none";
+      pauseButton.style.display = "inline-block";
+    });
+    player.on("pause", function () {
+      playButton.style.display = "inline-block";
+      pauseButton.style.display = "none";
+    });
+    player.on("stop", function () {
+      playButton.style.display = "inline-block";
+      pauseButton.style.display = "none";
+    });
+
+    let arrayBuffer = base64DecToArr(midiFileContents).buffer;
+    player.loadArrayBuffer(arrayBuffer);
+  });
 }
 
 function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime) {
@@ -223,26 +241,12 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
   }
 }
 
-function togglePausePlay() {
-  let playButton = document.getElementById("play");
-  let pauseButton = document.getElementById("pause");
-
-  if (player.isPlaying()) {
-    playButton.style.display = "inline-block";
-    pauseButton.style.display = "none";
-    player.pause();
-  } else {
-    pauseButton.style.display = "inline-block";
-    playButton.style.display = "none";
-    player.play();
-  }
-}
-
-function stopPlayer() {
-  let playButton = document.getElementById("play");
-  let pauseButton = document.getElementById("pause");
-
-  player.stop();
-  playButton.style.display = "inline-block";
-  pauseButton.style.display = "none";
+function setCurrentTime() {
+  let startTime = document.getElementById("startTime");
+  let currentTime = Math.round(player.getSongTime()) - player.getSongTimeRemaining();
+  let minutes = Math.floor(currentTime / 60);
+  let seconds = currentTime % 60;
+  startTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+  let slider = document.getElementById("slider");
+  slider.value = 100 - player.getSongPercentRemaining();
 }
