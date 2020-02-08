@@ -5,42 +5,47 @@ from py_midicsv import midi_to_csv
 class Note:
     def __init__(self, track, tick_on, tick_off, pitch, velocity):
         self.track = track
-        self.start = TempoMap.microsAtTick(tick_on) / 1000000
-        self.end = TempoMap.microsAtTick(tick_off) / 1000000
+        self.start = TempoMap.micros_at_tick(tick_on) / 1000000
+        self.end = TempoMap.micros_at_tick(tick_off) / 1000000
         self.duration = self.end - self.start
         self.pitch = pitch
         self.velocity = velocity
 
+
 class TempoEvent:
-    tick   = 0
+    tick = 0
     micros = 0
-    tempo  = 500000
+    tempo = 500000
+
 
 class TempoMap:
     tpqn = 480  # ticks per quarter note
     tmap = []
 
     @classmethod
-    def addTempo(cls, tick, tempo):
-        tempoEvent = TempoEvent()
-        tempoEvent.tick = tick
-        tempoEvent.tempo = tempo
-        tempoEvent.micros = cls.microsAtTick(tick)
-        cls.tmap.append(tempoEvent)
+    def addtempo(cls, tick, tempo):
+        tempo_event = TempoEvent()
+        tempo_event.tick = tick
+        tempo_event.tempo = tempo
+        tempo_event.micros = cls.micros_at_tick(tick)
+        cls.tmap.append(tempo_event)
 
     @classmethod
-    def tempoEventAtTick(cls, tick):
-        savedTempoEvent = TempoEvent()
-        for tempoEvent in cls.tmap:
-            if tempoEvent.tick > tick:
+    def tempo_event_at_tick(cls, tick):
+        saved_tempo_event = TempoEvent()
+        for tempo_event in cls.tmap:
+            if tempo_event.tick > tick:
                 break
-            savedTempoEvent = tempoEvent
-        return savedTempoEvent
+            saved_tempo_event = tempo_event
+        return saved_tempo_event
 
     @classmethod
-    def microsAtTick(cls, tick):
-        tempoEvent = cls.tempoEventAtTick(tick)
-        return tempoEvent.micros + ((tick - tempoEvent.tick) * tempoEvent.tempo) / cls.tpqn
+    def micros_at_tick(cls, tick):
+        tempo_event = cls.tempo_event_at_tick(tick)
+        return (
+            tempo_event.micros
+            + ((tick - tempo_event.tick) * tempo_event.tempo) / cls.tpqn
+        )
 
 
 def process_midi(file, name):
@@ -63,7 +68,7 @@ def process_midi(file, name):
         elif event == "Tempo":
             tick = int(cells[1])
             tempo = int(cells[3])
-            TempoMap.addTempo(tick, tempo)
+            TempoMap.addtempo(tick, tempo)
         elif event == "Note_on_c":
             velocity = int(cells[5])
             if velocity != 0:
