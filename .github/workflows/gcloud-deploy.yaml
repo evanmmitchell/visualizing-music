@@ -14,6 +14,6 @@ jobs:
       - uses: actions/checkout@master
       - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          version: '270.0.0'
+          project_id: ${{ secrets.GCLOUD_PROJECT_ID }}
           service_account_key: ${{ secrets.GCLOUD_AUTH }}
-      - run: gcloud app deploy --project ${{ secrets.GCLOUD_PROJECT_ID }}
+      - run: gcloud app deploy
