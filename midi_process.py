@@ -4,48 +4,45 @@ from py_midicsv import midi_to_csv
 
 class Note:
     def __init__(self, track, tick_on, tick_off, pitch, velocity):
+        MICROS_PER_SECOND = 1000000
+
         self.track = track
-        self.start = TempoMap.micros_at_tick(tick_on) / 1000000
-        self.end = TempoMap.micros_at_tick(tick_off) / 1000000
+        self.start = TempoMap.micros_at_tick(tick_on) / MICROS_PER_SECOND
+        self.end = TempoMap.micros_at_tick(tick_off) / MICROS_PER_SECOND
         self.duration = self.end - self.start
         self.pitch = pitch
         self.velocity = velocity
 
 
 class TempoEvent:
-    tick = 0
-    micros = 0
-    tempo = 500000
+    def __init__(self, tick=0, tempo=500000, micros=0):
+        self.tick = tick
+        self.tempo = tempo
+        self.micros = micros
 
 
 class TempoMap:
-    tpqn = 480  # ticks per quarter note
-    tmap = []
+    ticks_per_quarter_note = 480
+    tempo_map = []
 
     @classmethod
-    def addtempo(cls, tick, tempo):
-        tempo_event = TempoEvent()
-        tempo_event.tick = tick
-        tempo_event.tempo = tempo
-        tempo_event.micros = cls.micros_at_tick(tick)
-        cls.tmap.append(tempo_event)
-
-    @classmethod
-    def tempo_event_at_tick(cls, tick):
-        saved_tempo_event = TempoEvent()
-        for tempo_event in cls.tmap:
-            if tempo_event.tick > tick:
-                break
-            saved_tempo_event = tempo_event
-        return saved_tempo_event
+    def add_tempo(cls, tick, tempo):
+        tempo_event = TempoEvent(tick, tempo, cls.micros_at_tick(tick))
+        cls.tempo_map.append(tempo_event)
 
     @classmethod
     def micros_at_tick(cls, tick):
-        tempo_event = cls.tempo_event_at_tick(tick)
-        return (
-            tempo_event.micros
-            + ((tick - tempo_event.tick) * tempo_event.tempo) / cls.tpqn
+        tempo_event_at_tick = TempoEvent()
+        for tempo_event in cls.tempo_map:
+            if tempo_event.tick > tick:
+                break
+            tempo_event_at_tick = tempo_event
+        micros_offset = (
+            (tick - tempo_event_at_tick.tick)
+            / cls.ticks_per_quarter_note
+            * tempo_event_at_tick.tempo
         )
+        return tempo_event_at_tick.micros + micros_offset
 
 
 def process_midi(file, name):
@@ -56,42 +53,39 @@ def process_midi(file, name):
     else:
         raise ValueError("Couldn't process " + name + " (invalid file extension).")
 
-    notes = []
     title = ".".join(name.split(".")[:-1])  # Remove file extension
+
+    notes = []
     for i, row in enumerate(rows):
         cells = row.split(", ")
         event = cells[2]
         if event == "Header":
-            TempoMap.tpqn = int(cells[5])
-        elif event == "Title_t":
+            TempoMap.ticks_per_quarter_note = int(cells[5])
+        elif event == "Title_t" and (track := int(cells[0])) == 1:
             title = cells[3][1:-1]
         elif event == "Tempo":
             tick = int(cells[1])
             tempo = int(cells[3])
-            TempoMap.addtempo(tick, tempo)
-        elif event == "Note_on_c":
-            velocity = int(cells[5])
-            if velocity != 0:
-                track_on = int(cells[0])
-                tick_on = int(cells[1])
-                pitch_on = int(cells[4])
-                velocity_on = velocity
-                for row in rows[i:]:
-                    cells = row.split(", ")
-                    event = cells[2]
-                    if event == "Note_on_c" or event == "Note_off_c":
-                        velocity = 0 if event == "Note_off_c" else int(cells[5])
-                        if velocity == 0:
-                            track_off = int(cells[0])
-                            tick_off = int(cells[1])
-                            pitch_off = int(cells[4])
-                            if track_on == track_off and pitch_on == pitch_off:
-                                track = track_on
-                                pitch = pitch_on
-                                velocity = velocity_on
-                                note = Note(track, tick_on, tick_off, pitch, velocity)
-                                notes.append(note)
-                                break
+            TempoMap.add_tempo(tick, tempo)
+        elif event == "Note_on_c" and (velocity := int(cells[5])) != 0:
+            track_on = int(cells[0])
+            tick_on = int(cells[1])
+            pitch_on = int(cells[4])
+            velocity_on = velocity
+            for row in rows[i:]:
+                cells = row.split(", ")
+                event = cells[2]
+                if (
+                    (
+                        (event == "Note_on_c" and (velocity := int(cells[5])) == 0)
+                        or event == "Note_off_c"
+                    )
+                    and track_on == (track_off := int(cells[0]))
+                    and pitch_on == (pitch_off := int(cells[4]))
+                ):
+                    tick_off = int(cells[1])
+                    note = Note(track_on, tick_on, tick_off, pitch_on, velocity_on)
+                    notes.append(note)
+                    break
 
-    notes = [vars(note) for note in notes]
-    return [title, notes]
+    return [title, [vars(note) for note in notes]]
