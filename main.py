@@ -9,9 +9,9 @@ app = Flask(__name__)
 
 csp = {
     "default-src": [
-        '\'self\'',
+        "'self'",
         "https://cdnjs.cloudflare.com",
-        "https://gleitz.github.io"
+        "https://gleitz.github.io",
     ]
 }
 Talisman(app, content_security_policy=csp)
@@ -36,7 +36,7 @@ def jsonify_midi():
         #     sys.stderr.write(str(e) + "\n")
         file = DEFAULT_MIDI_PATH
         name = DEFAULT_MIDI_PATH.split("/")[-1]
-        with open(DEFAULT_MIDI_PATH, 'rb') as input_file:
+        with open(DEFAULT_MIDI_PATH, "rb") as input_file:
             contents = input_file.read()
     title, notes = process_midi(file, name)
     base64_contents = base64.b64encode(contents).decode("utf-8")

@@ -1,5 +1,5 @@
 body {
-  background-color: #b8e6ed;
+  background-color: #B8E6ED;
 }
 
 #header {
@@ -14,7 +14,7 @@ body {
   width: 400px;
   margin-left: 50%;
   transform: translate(-50%, 0);
-  color: #ddd;
+  color: #DDD;
   background: rgba(80, 80, 80, 0.2);
   display: none;
 }
@@ -54,7 +54,7 @@ body {
   width: 60%;
   height: 10px;
   border-radius: 5px;
-  background: #d3d3d3;
+  background: #D3D3D3;
   outline: none;
   opacity: 0.7;
   -webkit-transition: .2s;
