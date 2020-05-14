@@ -19,14 +19,20 @@ function initialize() {
     loadMidi(midiFile);
   });
 
+  let wasPlaying = false;
   let slider = document.getElementById("slider");
   slider.addEventListener("input", function () {
-    let wasPlaying = player.isPlaying();
+    if (player.isPlaying()) {
+      wasPlaying = true;
+      player.pause();
+    }
     player.skipToPercent(this.value);
+    setCurrentTime();
+  });
+  slider.addEventListener("change", function () {
     if (wasPlaying) {
       player.play();
-    } else {
-      setCurrentTime();
+      wasPlaying = false;
     }
   });
 
