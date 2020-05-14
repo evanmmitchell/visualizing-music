@@ -103,6 +103,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# vscode
+.vscode/
+
 # OS generated files
 .DS_Store
 .DS_Store?
