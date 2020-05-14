@@ -190,9 +190,10 @@ function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, sta
   let zSpacing = 2;
 
   for (let note of notes) {
+    note.duration = note.end - note.start;
     let boxGeometry = new THREE.BoxGeometry(note.duration * xScaleFactor, yScaleFactor, zScaleFactor);
     let boxMaterial = new THREE.MeshStandardMaterial({
-      color: COLORS[note.track % COLORS.length], transparent: true, opacity: 0.3 // TODO: opacity to be dynamics
+      color: COLORS[note.track % COLORS.length], transparent: true, opacity: note.velocity * 0.5
     });
     let box = new THREE.Mesh(boxGeometry, boxMaterial);
     let xPosition = (note.start + note.duration / 2 - startTime) * xScaleFactor;
@@ -206,7 +207,7 @@ function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, sta
 
     let edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
     let edgesMaterial = new THREE.LineBasicMaterial({
-      color: boxMaterial.color, transparent: boxMaterial.transparent, opacity: 0.4
+      color: boxMaterial.color, transparent: boxMaterial.transparent, opacity: boxMaterial.opacity + 0.1
     });
     let edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
     edges.position.copy(box.position);
@@ -223,9 +224,10 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
   let thetaScaleFactor = 2 * Math.PI / (endTime - startTime);
 
   for (let note of notes) {
+    note.duration = note.end - note.start;
     let sphereGeometry = new THREE.SphereGeometry(note.duration * durationScaleFactor);
     let sphereMaterial = new THREE.MeshStandardMaterial({
-      color: COLORS[note.track % COLORS.length], transparent: true, opacity: 0.3 // TODO: opacity to be dynamics
+      color: COLORS[note.track % COLORS.length], transparent: true, opacity: note.velocity * 0.5
     });
     let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     let radius = (note.pitch - minPitch) * radiusScaleFactor;

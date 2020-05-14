@@ -5,13 +5,13 @@ from py_midicsv import midi_to_csv
 class Note:
     def __init__(self, track, tick_on, tick_off, pitch, velocity):
         MICROS_PER_SECOND = 1000000
+        MAX_VELOCITY = 127
 
         self.track = track
         self.start = TempoMap.micros_at_tick(tick_on) / MICROS_PER_SECOND
         self.end = TempoMap.micros_at_tick(tick_off) / MICROS_PER_SECOND
-        self.duration = self.end - self.start
         self.pitch = pitch
-        self.velocity = velocity
+        self.velocity = velocity / MAX_VELOCITY
 
 
 class TempoEvent:
