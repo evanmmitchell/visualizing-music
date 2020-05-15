@@ -14,7 +14,6 @@ body {
   width: 400px;
   margin-left: 50%;
   transform: translate(-50%, 0);
-  color: #DDD;
   background: rgba(80, 80, 80, 0.2);
   display: none;
 }
@@ -84,6 +83,14 @@ canvas {
   left: 0;
   top: 0;
   z-index: -1;
+}
+
+#octocat {
+  display: block;
+  position: fixed;
+  bottom: 5px;
+  right: 5px;
+  height: 30px;
 }
 
 footer {
