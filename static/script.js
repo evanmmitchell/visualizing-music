@@ -55,7 +55,7 @@ function animate() {
 async function initializePlayer() {
   let AudioContext = window.AudioContext || window.webkitAudioContext || false;
   let ac = new AudioContext || new webkitAudioContext;
-  let instrument = await Soundfont.instrument(ac, "acoustic_grand_piano");
+  let instrument = await Soundfont.instrument(ac, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
   player = new MidiPlayer.Player(function (event) {
     if (event.name == "Note on") {
       instrument.play(event.noteName, ac.currentTime, { gain: event.velocity / 100 });
@@ -131,7 +131,7 @@ function initializeThreeJS() {
 
 function loadMidi(midiFile) {
   let formData = new FormData();
-  formData.append("midiFile", midiFile)
+  formData.append("midiFile", midiFile);
   let xhr = new XMLHttpRequest();
   xhr.open("POST", "/process-midi", true);
   xhr.onreadystatechange = function () {
@@ -174,7 +174,7 @@ function loadVisualization(notes) {
   camera.far = 500;  // TODO: Variable near/far with maxTrack
   camera.updateProjectionMatrix();
   camera.position.set(0, 0, 3);
-  controls.update()
+  controls.update();
 }
 
 async function loadAudio(midiFileContents) {
