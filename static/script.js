@@ -1,6 +1,6 @@
 "use strict";
 
-let renderer, scene, camera, controls, player, playerPromise, objectsInScene = [];
+let renderer, scene, camera, controls, player, instrumentPromise, objectsInScene = [];
 
 
 initialize();
@@ -15,9 +15,7 @@ function initialize() {
     title.textContent = "Loading...";
     playerControls.style.display = "none";
 
-    if (player) {
-      player.stop();
-    }
+    player?.stop();
 
     for (let object of objectsInScene) {
       object.material.dispose();
@@ -30,7 +28,7 @@ function initialize() {
     loadMidi(midiFile);
   };
 
-  playerPromise = initializeAudio();
+  initializeAudio();
   initializeThreeJS();
 
   loadMidi();
@@ -38,82 +36,56 @@ function initialize() {
 
 function animate() {
   requestAnimationFrame(animate);
+
   // TODO: Use THREE.Clock for time in dynamic visualization
   renderer.render(scene, camera);
+
+  updatePlayTime();
 }
 
-async function initializeAudio() {
+function initializeAudio() {
   let AudioContext = window.AudioContext ?? window.webkitAudioContext;
   let audioContext = new AudioContext();
   unmute(audioContext);
-  let instrument = await Soundfont.instrument(audioContext, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
-
-  player = new MidiPlayer.Player(function (event) {
-    if (event.name == "Note on") {
-      instrument.play(event.noteName, audioContext.currentTime, { gain: event.velocity / 100 });
-    }
-  });
-  player.on("fileLoaded", function () {
-    let songTime = player.getSongTime();
-    let minutes = Math.floor(songTime / 60);
-    let seconds = Math.round(songTime % 60);
-    let endTime = document.getElementById("endTime");
-    endTime.textContent = minutes + ":" + seconds;
-    updatePlayTime();
-
-    let playerControls = document.getElementById("player");
-    playerControls.style.display = "block";
-  });
-  player.on("playing", updatePlayTime);
-  player.on("stop", updatePlayTime);
-
-  let playButton = document.getElementById("play");
-  let pauseButton = document.getElementById("pause");
-  let stopButton = document.getElementById("stop");
-  playButton.onclick = () => player.play();
-  pauseButton.onclick = () => player.pause();
-  stopButton.onclick = () => player.stop();
-
-  player.on("play", () => {
-    playButton.style.display = "none";
-    pauseButton.style.display = "inline-block";
-  });
-  player.on("pause", () => {
-    playButton.style.display = "inline-block";
-    pauseButton.style.display = "none";
-  });
-  player.on("stop", () => {
-    playButton.style.display = "inline-block";
-    pauseButton.style.display = "none";
-  });
-
-  player.sampleRate = 0;
+  instrumentPromise = Soundfont.instrument(audioContext, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
 
   let slider = document.getElementById("slider");
   slider.step = Number.MIN_VALUE;
   let wasPlaying = false;
   slider.oninput = () => {
-    if (player.isPlaying()) {
+    if (player?.isPlaying) {
       player.pause();
       wasPlaying = true;
     }
-    player.skipToPercent(slider.value);
-    updatePlayTime();
   };
   slider.onchange = () => {
     if (wasPlaying) {
-      player.play();
+      play();
       wasPlaying = false;
     }
   };
 
+  let playButton = document.getElementById("play");
+  let pauseButton = document.getElementById("pause");
+  let stopButton = document.getElementById("stop");
+  playButton.onclick = play;
+  pauseButton.onclick = () => player?.pause();
+  stopButton.onclick = () => player?.stop();
+
   const SPACE = 32;
   window.onkeydown = event => {
-    if (event.which === SPACE && player) {
-      player.isPlaying() ? player.pause() : player.play();
+    if (event.which === SPACE) {
+      player?.isPlaying ? player.pause() : play();
       event.preventDefault();
     }
   };
+
+  function play() {
+    if (player) {
+      let playTime = slider.value / 100 * player.songTime;
+      player.play(playTime);
+    }
+  }
 }
 
 function initializeThreeJS() {
@@ -162,25 +134,34 @@ function loadMidi(midiFile) {
     if (xhr.readyState === 4 && xhr.status === 200) {
       let response = JSON.parse(xhr.responseText);
       title.textContent = response.title;
-      loadAudio(response.contents);
-      loadVisualization(response.notes);
+      loadNotes(response.notes);
     }
   };
 
   xhr.send(formData);
 }
 
-async function loadAudio(midiFileContents) {
-  let arrayBuffer = base64DecToArr(midiFileContents).buffer;
+function updatePlayTime() {
+  if (player) {
+    let slider = document.getElementById("slider");
 
-  await playerPromise;
-  player.loadArrayBuffer(arrayBuffer);
+    if (player.isPlaying) {
+      slider.value = player.playPercent;
+    }
+
+    let currentTime = Math.round(slider.value / 100 * player.songTime);
+    let minutes = Math.floor(currentTime / 60);
+    let seconds = currentTime % 60;
+    let playTime = document.getElementById("playTime");
+    playTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+  }
 }
 
-function loadVisualization(notes) {
+function loadNotes(notes) {
   let minPitch = Infinity, maxPitch = -Infinity;
   let minTrack = Infinity, maxTrack = -Infinity;
   let startTime = Infinity, endTime = -Infinity;
+  let events = [];
   for (let note of notes) {
     minPitch = Math.min(minPitch, note.pitch);
     maxPitch = Math.max(maxPitch, note.pitch);
@@ -188,8 +169,46 @@ function loadVisualization(notes) {
     maxTrack = Math.max(maxTrack, note.track);
     startTime = Math.min(startTime, note.start);
     endTime = Math.max(endTime, note.end);
+
+    let event = { time: note.start, note: note.pitch, duration: note.duration, gain: note.velocity };
+    events.push(event);
   }
 
+  loadAudio(events, endTime);
+  loadVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime);
+}
+
+async function loadAudio(events, songTime) {
+  let minutes = Math.floor(songTime / 60);
+  let seconds = Math.round(songTime % 60);
+  let endTime = document.getElementById("endTime");
+  endTime.textContent = minutes + ":" + seconds;
+
+  let instrument = await instrumentPromise;
+  player = new Player(instrument, events, songTime);
+
+  let slider = document.getElementById("slider");
+  slider.value = 0;
+
+  let playButton = document.getElementById("play");
+  let pauseButton = document.getElementById("pause");
+  player.on("play", () => {
+    playButton.style.display = "none";
+    pauseButton.style.display = "inline-block";
+  });
+  player.on("stop", () => {
+    slider.value = 0;
+  });
+  player.on("stopPlaying", () => {
+    playButton.style.display = "inline-block";
+    pauseButton.style.display = "none";
+  });
+
+  let playerControls = document.getElementById("player");
+  playerControls.style.display = "block";
+}
+
+function loadVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {
   let colors = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
   // TODO: Set camera's z position instead of passing minTrack
   staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime, colors);
@@ -258,15 +277,4 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
     scene.add(sphere);
     objectsInScene.push(sphere);
   }
-}
-
-function updatePlayTime() {
-  let currentTime = Math.round(player.getSongTime() - player.getSongTimeRemaining());
-  let minutes = Math.floor(currentTime / 60);
-  let seconds = currentTime % 60;
-  let playTime = document.getElementById("playTime");
-  playTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-
-  let slider = document.getElementById("slider");
-  slider.value = 100 - player.getSongPercentRemaining();
 }
