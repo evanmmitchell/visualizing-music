@@ -55,6 +55,7 @@ function animate() {
 async function initializePlayer() {
   let AudioContext = window.AudioContext || window.webkitAudioContext || false;
   let ac = new AudioContext || new webkitAudioContext;
+  unmute(ac);
   let instrument = await Soundfont.instrument(ac, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
   player = new MidiPlayer.Player(function (event) {
     if (event.name == "Note on") {
