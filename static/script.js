@@ -14,7 +14,19 @@ function initialize() {
   initializeThreeJS();
 
   let fileInput = document.getElementById("fileInput");
+  let title = document.getElementById("title");
+  let playerControls = document.getElementById("player");
   fileInput.addEventListener("change", function (event) {
+    title.textContent = "Loading...";
+    playerControls.style.display = "none";
+
+    for (let object of objectsInScene) {
+      object.material.dispose();
+      object.geometry.dispose();
+    }
+    scene.remove(...objectsInScene);
+    objectsInScene = [];
+
     let midiFile = event.target.files[0];
     loadMidi(midiFile);
   });
@@ -160,13 +172,6 @@ function loadVisualization(notes) {
     endTime = Math.max(endTime, note.end);
   }
 
-  for (let object of objectsInScene) {
-    object.material.dispose();
-    object.geometry.dispose();
-  }
-  scene.remove(...objectsInScene);
-  objectsInScene = [];
-
   // TODO: Set camera's z position instead of passing minTrack
   staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime);
   // staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime);
@@ -179,9 +184,6 @@ function loadVisualization(notes) {
 }
 
 async function loadAudio(midiFileContents) {
-  let playerControls = document.getElementById("player");
-  playerControls.style.display = "none";
-
   let arrayBuffer = base64DecToArr(midiFileContents).buffer;
 
   await playerPromise;
@@ -253,8 +255,8 @@ function setCurrentTime() {
   let currentTime = Math.round(player.getSongTime() - player.getSongTimeRemaining());
   let minutes = Math.floor(currentTime / 60);
   let seconds = currentTime % 60;
-  let startTime = document.getElementById("startTime");
-  startTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+  let playTime = document.getElementById("playTime");
+  playTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
 
   let slider = document.getElementById("slider");
   slider.value = 100 - player.getSongPercentRemaining();

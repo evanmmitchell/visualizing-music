@@ -22,18 +22,16 @@
 
   <body>
     <div id="header" data-nosnippet>
-      <!-- <h1>Visualizing Music</h1> -->
-
       <p>Upload a MIDI file: <input type="file" id="fileInput" accept=".mid,.midi,.kar" /></p>
 
-      <h2 id="title"></h2>
+      <h2 id="title">Loading...</h2>
 
       <div id="player">
         <span id="play"><i class="fa fa-play"></i></span>
         <span id="pause"><i class="fa fa-pause"></i></span>
         <span id="stop"><i class="fa fa-stop"></i></span>
         <div id="time">
-          <span id="startTime">0:00</span>
+          <span id="playTime">0:00</span>
           <input type="range" min="0" max="100" value="0" id="slider">
           <span id="endTime">0:00</span>
         </div>
@@ -45,6 +43,7 @@
     <a href="https://github.com/evanmmitchell/visualizing-music/">
       <img id="octocat" src="static/octocat.png" alt="View on GitHub">
     </a>
+
     <footer>
       <small>&copy; 2019&ndash;2020 Evan Mitchell &amp; Merissa Tan</small>
     </footer>
