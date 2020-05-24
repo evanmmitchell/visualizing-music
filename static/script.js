@@ -1,7 +1,5 @@
 "use strict";
 
-let COLORS = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
-let directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
 let renderer, scene, camera, controls, player, playerPromise, objectsInScene = [];
 
 
@@ -10,15 +8,16 @@ animate();
 
 
 function initialize() {
-  playerPromise = initializePlayer();
-  initializeThreeJS();
-
   let fileInput = document.getElementById("fileInput");
   let title = document.getElementById("title");
   let playerControls = document.getElementById("player");
-  fileInput.addEventListener("change", function (event) {
+  fileInput.onchange = event => {
     title.textContent = "Loading...";
     playerControls.style.display = "none";
+
+    if (player) {
+      player.stop();
+    }
 
     for (let object of objectsInScene) {
       object.material.dispose();
@@ -29,31 +28,10 @@ function initialize() {
 
     let midiFile = event.target.files[0];
     loadMidi(midiFile);
-  });
+  };
 
-  let wasPlaying = false;
-  let slider = document.getElementById("slider");
-  slider.addEventListener("input", function () {
-    if (player.isPlaying()) {
-      wasPlaying = true;
-      player.pause();
-    }
-    player.skipToPercent(this.value);
-    setCurrentTime();
-  });
-  slider.addEventListener("change", function () {
-    if (wasPlaying) {
-      player.play();
-      wasPlaying = false;
-    }
-  });
-
-  let playButton = document.getElementById("play");
-  let pauseButton = document.getElementById("pause");
-  let stopButton = document.getElementById("stop");
-  playButton.addEventListener("click", function () { player.play(); });
-  pauseButton.addEventListener("click", function () { player.pause(); });
-  stopButton.addEventListener("click", function () { player.stop(); });
+  playerPromise = initializeAudio();
+  initializeThreeJS();
 
   loadMidi();
 }
@@ -64,16 +42,15 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-async function initializePlayer() {
-  let AudioContext = window.AudioContext || window.webkitAudioContext || false;
-  let ac = new AudioContext || new webkitAudioContext;
-  unmute(ac);
-  let instrument = await Soundfont.instrument(ac, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
+async function initializeAudio() {
+  let AudioContext = window.AudioContext ?? window.webkitAudioContext;
+  let audioContext = new AudioContext();
+  unmute(audioContext);
+  let instrument = await Soundfont.instrument(audioContext, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
+
   player = new MidiPlayer.Player(function (event) {
     if (event.name == "Note on") {
-      instrument.play(event.noteName, ac.currentTime, { gain: event.velocity / 100 });
-    } else if (event.name == "Note off") {
-      instrument.play(event.noteName, ac.currentTime, { gain: 0 });
+      instrument.play(event.noteName, audioContext.currentTime, { gain: event.velocity / 100 });
     }
   });
   player.on("fileLoaded", function () {
@@ -82,30 +59,61 @@ async function initializePlayer() {
     let seconds = Math.round(songTime % 60);
     let endTime = document.getElementById("endTime");
     endTime.textContent = minutes + ":" + seconds;
-    setCurrentTime();
+    updatePlayTime();
 
     let playerControls = document.getElementById("player");
     playerControls.style.display = "block";
   });
-  player.on("playing", setCurrentTime);
-  player.on("stop", setCurrentTime);
+  player.on("playing", updatePlayTime);
+  player.on("stop", updatePlayTime);
 
   let playButton = document.getElementById("play");
   let pauseButton = document.getElementById("pause");
-  player.on("play", function () {
+  let stopButton = document.getElementById("stop");
+  playButton.onclick = () => player.play();
+  pauseButton.onclick = () => player.pause();
+  stopButton.onclick = () => player.stop();
+
+  player.on("play", () => {
     playButton.style.display = "none";
     pauseButton.style.display = "inline-block";
   });
-  player.on("pause", function () {
+  player.on("pause", () => {
     playButton.style.display = "inline-block";
     pauseButton.style.display = "none";
   });
-  player.on("stop", function () {
+  player.on("stop", () => {
     playButton.style.display = "inline-block";
     pauseButton.style.display = "none";
   });
 
   player.sampleRate = 0;
+
+  let slider = document.getElementById("slider");
+  slider.step = Number.MIN_VALUE;
+  let wasPlaying = false;
+  slider.oninput = () => {
+    if (player.isPlaying()) {
+      player.pause();
+      wasPlaying = true;
+    }
+    player.skipToPercent(slider.value);
+    updatePlayTime();
+  };
+  slider.onchange = () => {
+    if (wasPlaying) {
+      player.play();
+      wasPlaying = false;
+    }
+  };
+
+  const SPACE = 32;
+  window.onkeydown = event => {
+    if (event.which === SPACE && player) {
+      player.isPlaying() ? player.pause() : player.play();
+      event.preventDefault();
+    }
+  };
 }
 
 function initializeThreeJS() {
@@ -124,7 +132,7 @@ function initializeThreeJS() {
   const frustumSize = 10;
   let aspectRatio = window.innerWidth / window.innerHeight;
   camera = new THREE.OrthographicCamera(frustumSize * aspectRatio / -2, frustumSize * aspectRatio / 2, frustumSize / 2, frustumSize / -2);
-  window.addEventListener("resize", function () {
+  window.onresize = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     aspectRatio = window.innerWidth / window.innerHeight;
     camera.left = frustumSize * aspectRatio / -2;
@@ -132,14 +140,15 @@ function initializeThreeJS() {
     camera.top = frustumSize / 2;
     camera.bottom = frustumSize / -2;
     camera.updateProjectionMatrix();
-  });
+  };
 
   // TODO: Change to trackball control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.addEventListener("change", function () {
+  controls.onchange = () => {
     directionalLight.position.copy(camera.position);
+    let directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
     // directionalLight.position.add(directionalLightDisplacementVector);
-  });
+  };
 }
 
 function loadMidi(midiFile) {
@@ -147,16 +156,25 @@ function loadMidi(midiFile) {
   formData.append("midiFile", midiFile);
   let xhr = new XMLHttpRequest();
   xhr.open("POST", "/process-midi", true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState == 4 && xhr.status == "200") {
+
+  let title = document.getElementById("title");
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === 4 && xhr.status === 200) {
       let response = JSON.parse(xhr.responseText);
-      let title = document.getElementById("title");
       title.textContent = response.title;
-      loadVisualization(response.notes);
       loadAudio(response.contents);
+      loadVisualization(response.notes);
     }
   };
+
   xhr.send(formData);
+}
+
+async function loadAudio(midiFileContents) {
+  let arrayBuffer = base64DecToArr(midiFileContents).buffer;
+
+  await playerPromise;
+  player.loadArrayBuffer(arrayBuffer);
 }
 
 function loadVisualization(notes) {
@@ -172,9 +190,10 @@ function loadVisualization(notes) {
     endTime = Math.max(endTime, note.end);
   }
 
+  let colors = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
   // TODO: Set camera's z position instead of passing minTrack
-  staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime);
-  // staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime);
+  staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime, colors);
+  // staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime, colors);
 
   camera.near = -500;
   camera.far = 500;  // TODO: Variable near/far with maxTrack
@@ -183,15 +202,7 @@ function loadVisualization(notes) {
   controls.update();
 }
 
-async function loadAudio(midiFileContents) {
-  let arrayBuffer = base64DecToArr(midiFileContents).buffer;
-
-  await playerPromise;
-  player.stop();
-  player.loadArrayBuffer(arrayBuffer);
-}
-
-function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime) {
+function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, startTime, colors) {
   let pitchDisplacement = minPitch + (maxPitch - minPitch) / 2;
   let xScaleFactor = 1.5;
   let yScaleFactor = 0.25;
@@ -199,10 +210,9 @@ function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, sta
   let zSpacing = 2;
 
   for (let note of notes) {
-    note.duration = note.end - note.start;
     let boxGeometry = new THREE.BoxGeometry(note.duration * xScaleFactor, yScaleFactor, zScaleFactor);
     let boxMaterial = new THREE.MeshStandardMaterial({
-      color: COLORS[note.track % COLORS.length], transparent: true, opacity: note.velocity * 0.5
+      color: colors[note.track % colors.length], transparent: true, opacity: note.velocity * 0.5
     });
     let box = new THREE.Mesh(boxGeometry, boxMaterial);
     let xPosition = (note.start + note.duration / 2 - startTime) * xScaleFactor;
@@ -227,16 +237,15 @@ function staticRectangularVisualization(notes, minPitch, maxPitch, minTrack, sta
   }
 }
 
-function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {
+function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime, colors) {
   let durationScaleFactor = 1.5;
   let radiusScaleFactor = 100 / (maxPitch - minPitch);
   let thetaScaleFactor = 2 * Math.PI / (endTime - startTime);
 
   for (let note of notes) {
-    note.duration = note.end - note.start;
     let sphereGeometry = new THREE.SphereGeometry(note.duration * durationScaleFactor);
     let sphereMaterial = new THREE.MeshStandardMaterial({
-      color: COLORS[note.track % COLORS.length], transparent: true, opacity: note.velocity * 0.5
+      color: colors[note.track % colors.length], transparent: true, opacity: note.velocity * 0.5
     });
     let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     let radius = (note.pitch - minPitch) * radiusScaleFactor;
@@ -251,7 +260,7 @@ function staticSphericalVisualization(notes, minPitch, maxPitch, minTrack, start
   }
 }
 
-function setCurrentTime() {
+function updatePlayTime() {
   let currentTime = Math.round(player.getSongTime() - player.getSongTimeRemaining());
   let minutes = Math.floor(currentTime / 60);
   let seconds = currentTime % 60;
