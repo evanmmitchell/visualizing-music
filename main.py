@@ -6,7 +6,8 @@ from midi_process import process_midi
 
 app = Flask(__name__)
 
-Talisman(app)
+csp = {"default-src": "'self'", "media-src": "'self' data:"}
+Talisman(app, content_security_policy=csp)
 
 DEFAULT_MIDI_PATH = "sample-midi/happy-birthday-simplified.mid"
 
