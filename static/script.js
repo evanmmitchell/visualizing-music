@@ -149,11 +149,12 @@ function updatePlayTime() {
       slider.value = player.playPercent;
     }
 
+    let songTimeMinutes = String(Math.floor(player.songTime / 60));
     let currentTime = Math.round(slider.value / 100 * player.songTime);
-    let minutes = Math.floor(currentTime / 60);
-    let seconds = currentTime % 60;
+    let currentMinutes = String(Math.floor(currentTime / 60));
+    let currentSeconds = String(currentTime % 60);
     let playTime = document.getElementById("playTime");
-    playTime.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+    playTime.textContent = currentMinutes.padStart(songTimeMinutes.length, "0") + ":" + currentSeconds.padStart(2, "0");
   }
 }
 
@@ -205,7 +206,7 @@ async function loadAudio(events, songTime) {
   });
 
   let playerControls = document.getElementById("player");
-  playerControls.style.display = "block";
+  playerControls.style.display = "inline-flex";
 }
 
 function loadVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {

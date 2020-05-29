@@ -26,25 +26,29 @@
       <h2 id="title">Loading...</h2>
 
       <div id="player">
-        <span id="play"><i class="fa fa-play"></i></span>
-        <span id="pause"><i class="fa fa-pause"></i></span>
-        <span id="stop"><i class="fa fa-stop"></i></span>
         <div id="time">
           <span id="playTime">0:00</span>
           <input type="range" min="0" max="100" value="0" id="slider">
           <span id="endTime">0:00</span>
+        </div>
+        <div id="playerControls">
+          <span id="play"><i class="fa fa-play"></i></span>
+          <span id="pause"><i class="fa fa-pause"></i></span>
+          <span id="stop"><i class="fa fa-stop"></i></span>
         </div>
       </div>
     </div>
 
     <script type="text/javascript" src="static/script.js"></script>
 
-    <a href="https://github.com/evanmmitchell/visualizing-music/">
-      <img id="octocat" src="static/octocat.png" alt="View on GitHub">
-    </a>
-
-    <footer>
+    <footer id="copyright">
       <small>&copy; 2019&ndash;2020 Evan Mitchell &amp; Merissa Tan</small>
+    </footer>
+
+    <footer id="github">
+      <a href="https://github.com/evanmmitchell/visualizing-music/">
+        <img id="octocat" src="static/octocat.png" alt="View on GitHub">
+      </a>
     </footer>
   </body>
 
