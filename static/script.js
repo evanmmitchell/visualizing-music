@@ -101,7 +101,7 @@ function initializeThreeJS() {
   directionalLight.castShadow = true;
   scene.add(directionalLight);
 
-  const frustumSize = 10;
+  let frustumSize = 10;
   let aspectRatio = window.innerWidth / window.innerHeight;
   camera = new THREE.OrthographicCamera(frustumSize * aspectRatio / -2, frustumSize * aspectRatio / 2, frustumSize / 2, frustumSize / -2);
   window.onresize = () => {
@@ -195,18 +195,18 @@ async function loadAudio(events, songTime) {
   let pauseButton = document.getElementById("pause");
   player.on("play", () => {
     playButton.style.display = "none";
-    pauseButton.style.display = "inline-block";
+    pauseButton.style.display = "initial";
   });
   player.on("stop", () => {
     slider.value = 0;
   });
   player.on("stopPlaying", () => {
-    playButton.style.display = "inline-block";
+    playButton.style.display = "initial";
     pauseButton.style.display = "none";
   });
 
   let playerControls = document.getElementById("player");
-  playerControls.style.display = "inline-flex";
+  playerControls.style.display = "flex";
 }
 
 function loadVisualization(notes, minPitch, maxPitch, minTrack, startTime, endTime) {

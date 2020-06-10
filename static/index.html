@@ -3,43 +3,40 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, user-scalable=no" />
-    <meta name="description" content="Upload a MIDI file to view a 3-D music visualization.">
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Upload a MIDI file to view a 3-D music visualization." />
 
     <title>Visualizing Music</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="static/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="static/style.css" />
-    <link rel="stylesheet" type="text/css" href="static/libs/font-awesome/font-awesome.min.css">
-    <script type="text/javascript" src="static/libs/three/three.min.js"></script>
-    <script type="text/javascript" src="static/libs/three/OrbitControls.js"></script>
+    <script type="text/javascript" src="static/libs/three/three.min.js" defer></script>
+    <script type="text/javascript" src="static/libs/three/OrbitControls.js" defer></script>
     <!-- <script type="text/javascript" src="static/three/OrthographicTrackballControls.js"></script> -->
-    <script type="text/javascript" src="static/libs/soundfont-player/soundfont-player.min.js"></script>
-    <script type="text/javascript" src="static/libs/unmute.js"></script>
-    <script type="text/javascript" src="static/player.js"></script>
+    <script type="text/javascript" src="static/libs/soundfont-player/soundfont-player.min.js" defer></script>
+    <script type="text/javascript" src="static/libs/unmute.js" defer></script>
+    <script type="text/javascript" src="static/player.js" defer></script>
+    <script type="text/javascript" src="static/script.js" defer></script>
   </head>
 
   <body>
     <div id="header" data-nosnippet>
-      <p>Upload a MIDI file: <input type="file" id="fileInput" accept=".mid,.midi,.kar" /></p>
+      <div>
+        <label for="fileInput">Upload a MIDI file: </label>
+        <input type="file" id="fileInput" accept=".mid,.midi,.kar" />
+      </div>
 
       <h2 id="title">Loading...</h2>
 
       <div id="player">
-        <div id="time">
-          <span id="playTime">0:00</span>
-          <input type="range" min="0" max="100" value="0" id="slider">
-          <span id="endTime">0:00</span>
-        </div>
-        <div id="playerControls">
-          <span id="play"><i class="fa fa-play"></i></span>
-          <span id="pause"><i class="fa fa-pause"></i></span>
-          <span id="stop"><i class="fa fa-stop"></i></span>
-        </div>
+        <span id="playTime" class="playerTime">0:00</span>
+        <input type="range" min="0" max="100" value="0" id="slider">
+        <span id="endTime" class="playerTime">0:00</span>
+        <img id="play" class="playerControl" src="static/libs/font-awesome/play.svg" alt="play" />
+        <img id="pause" class="playerControl" src="static/libs/font-awesome/pause.svg" alt="pause" />
+        <img id="stop" class="playerControl" src="static/libs/font-awesome/stop.svg" alt="stop" />
       </div>
     </div>
-
-    <script type="text/javascript" src="static/script.js"></script>
 
     <footer id="copyright">
       <small>&copy; 2019&ndash;2020 Evan Mitchell &amp; Merissa Tan</small>
@@ -47,7 +44,7 @@
 
     <footer id="github">
       <a href="https://github.com/evanmmitchell/visualizing-music/">
-        <img id="octocat" src="static/octocat.png" alt="View on GitHub">
+        <img id="octocat" src="static/libs/font-awesome/github.svg" alt="View on GitHub" />
       </a>
     </footer>
   </body>
