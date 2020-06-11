@@ -9,14 +9,14 @@
     <title>Visualizing Music</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="static/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="static/style.css" />
-    <script type="text/javascript" src="static/libs/three/three.min.js" defer></script>
-    <script type="text/javascript" src="static/libs/three/OrbitControls.js" defer></script>
-    <!-- <script type="text/javascript" src="static/three/OrthographicTrackballControls.js"></script> -->
-    <script type="text/javascript" src="static/libs/soundfont-player/soundfont-player.min.js" defer></script>
-    <script type="text/javascript" src="static/libs/unmute.js" defer></script>
-    <script type="text/javascript" src="static/player.js" defer></script>
-    <script type="text/javascript" src="static/script.js" defer></script>
+    <link rel="stylesheet" type="text/css" href="static/css/style.css" />
+    <script type="text/javascript" src="static/js/lib/three/three.min.js" defer></script>
+    <script type="text/javascript" src="static/js/lib/three/OrbitControls.js" defer></script>
+    <!-- <script type="text/javascript" src="static/js/lib/three/OrthographicTrackballControls.js"></script> -->
+    <script type="text/javascript" src="static/js/lib/soundfont-player/soundfont-player.min.js" defer></script>
+    <script type="text/javascript" src="static/js/lib/unmute.js" defer></script>
+    <script type="text/javascript" src="static/js/Player.js" defer></script>
+    <script type="text/javascript" src="static/js/script.js" defer></script>
   </head>
 
   <body>
@@ -32,9 +32,9 @@
         <span id="playTime" class="playerTime">0:00</span>
         <input type="range" min="0" max="100" value="0" id="slider">
         <span id="endTime" class="playerTime">0:00</span>
-        <img id="play" class="playerControl" src="static/libs/font-awesome/play.svg" alt="play" />
-        <img id="pause" class="playerControl" src="static/libs/font-awesome/pause.svg" alt="pause" />
-        <img id="stop" class="playerControl" src="static/libs/font-awesome/stop.svg" alt="stop" />
+        <img id="play" class="playerControl" src="static/img/lib/font-awesome/play.svg" alt="play" />
+        <img id="pause" class="playerControl" src="static/img/lib/font-awesome/pause.svg" alt="pause" />
+        <img id="stop" class="playerControl" src="static/img/lib/font-awesome/stop.svg" alt="stop" />
       </div>
     </div>
 
@@ -44,7 +44,7 @@
 
     <footer id="github">
       <a href="https://github.com/evanmmitchell/visualizing-music/">
-        <img id="octocat" src="static/libs/font-awesome/github.svg" alt="View on GitHub" />
+        <img id="octocat" src="static/img/github.svg" alt="View on GitHub" />
       </a>
     </footer>
   </body>

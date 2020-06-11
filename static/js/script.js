@@ -47,7 +47,7 @@ function initializeAudio() {
   let AudioContext = window.AudioContext ?? window.webkitAudioContext;
   let audioContext = new AudioContext();
   unmute(audioContext);
-  instrumentPromise = Soundfont.instrument(audioContext, "/static/libs/soundfont-player/acoustic_grand_piano-mp3.js");
+  instrumentPromise = Soundfont.instrument(audioContext, "/static/js/lib/soundfont-player/acoustic_grand_piano-mp3.js");
 
   let slider = document.getElementById("slider");
   slider.step = Number.MIN_VALUE;
