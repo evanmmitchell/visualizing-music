@@ -1,25 +1,37 @@
 class Player {
-  constructor(instrument, events, songTime) {
+  constructor(instrument, song) {
     this.instrument = instrument;
-    this.events = events;
-    this.songTime = songTime;
-
-    this._startTime;
-    this._nextInterval;
-    this._eventListeners = {};
+    this.song = song;
   }
 
   get isPlaying() {
-    return this._startTime !== undefined;
+    return !!(this._startTime || this._startTime === 0);
   }
 
-  get playPercent() {
-    if (this.isPlaying) {
-      let audioContext = this.instrument.context;
-      let playTime = audioContext.currentTime - this._startTime;
-      return playTime / this.songTime * 100;
+  get playTime() {
+    if (!this.isPlaying) {
+      return null;
     }
-    return undefined;
+    let audioContext = this.instrument.context;
+    return audioContext.currentTime - this._startTime;
+  }
+
+  get song() {
+    return this._song;
+  }
+
+  get songTime() {
+    return this._song.endTime;
+  }
+
+  set song(song) {
+    this._song = song;
+
+    this._events = [];
+    for (let note of song.notes) {
+      let event = { time: note.time, note: note.pitch, duration: note.duration, gain: note.velocity };
+      this._events.push(event);
+    }
   }
 
   play(playTime) {
@@ -29,7 +41,7 @@ class Player {
     let audioContext = this.instrument.context;
     let nextPlayTime = playTime + SCHEDULE_INTERVAL;
 
-    let eventsToSchedule = this.events.filter(event => playTime <= event.time && event.time < nextPlayTime);
+    let eventsToSchedule = this._events.filter(event => playTime <= event.time && event.time < nextPlayTime);
     eventsToSchedule = JSON.parse(JSON.stringify(eventsToSchedule));    // Deep copy
     eventsToSchedule.forEach(event => event.time -= playTime);
     this._startTime = this._startTime ?? audioContext.currentTime - playTime;
@@ -58,13 +70,17 @@ class Player {
   }
 
   on(playerEvent, callback) {
+    if (!this._eventListeners) {
+      this._eventListeners = {};
+    }
+
     this._eventListeners[playerEvent] = callback;
   }
 
   _stopPlaying() {
     clearTimeout(this._nextInterval);
     this.instrument.stop();
-    this._startTime = undefined;
+    this._startTime = null;
 
     this._emitPlayerEvent("stopPlaying");
   }

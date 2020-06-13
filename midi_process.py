@@ -1,25 +1,39 @@
-import sys
+from math import inf
 from py_midicsv import midi_to_csv
 
 
-class Note:
-    def __init__(self, track, tick_on, tick_off, pitch, velocity, tempoMap):
-        MICROS_PER_SECOND = 1000000
-        MAX_VELOCITY = 127
+class Song:
+    def __init__(self, name):
+        self.title = ".".join(name.split(".")[:-1])  # Remove file extension
+        self.notes = []
+        self.minPitch = inf
+        self.maxPitch = -inf
+        self.minTrack = inf
+        self.maxTrack = -inf
+        self.startTime = inf
+        self.endTime = -inf
 
-        self.track = track
-        self.start = tempoMap.micros_at_tick(tick_on) / MICROS_PER_SECOND
-        self.end = tempoMap.micros_at_tick(tick_off) / MICROS_PER_SECOND
-        self.duration = self.end - self.start
-        self.pitch = pitch
-        self.velocity = velocity / MAX_VELOCITY
+    def add_note(self, track, tick_on, tick_off, pitch, velocity, tempo_map):
+        note = self.Note(track, tick_on, tick_off, pitch, velocity, tempo_map)
+        self.notes.append(note)
+        self.minPitch = min(self.minPitch, note.pitch)
+        self.maxPitch = max(self.maxPitch, note.pitch)
+        self.minTrack = min(self.minTrack, note.track)
+        self.maxTrack = max(self.maxTrack, note.track)
+        self.startTime = min(self.startTime, note.time)
+        self.endTime = max(self.endTime, note.time + note.duration)
 
-
-class TempoEvent:
-    def __init__(self, tick=0, tempo=500000, micros=0):
-        self.tick = tick
-        self.tempo = tempo
-        self.micros = micros
+    class Note:
+        def __init__(self, track, tick_on, tick_off, pitch, velocity, tempo_map):
+            MICROS_PER_SECOND = 1000000
+            MAX_VELOCITY = 127
+            self.track = track
+            start = tempo_map.micros_at_tick(tick_on) / MICROS_PER_SECOND
+            end = tempo_map.micros_at_tick(tick_off) / MICROS_PER_SECOND
+            self.duration = end - start
+            self.time = start
+            self.pitch = pitch
+            self.velocity = velocity / MAX_VELOCITY
 
 
 class TempoMap:
@@ -28,11 +42,11 @@ class TempoMap:
         self.tempo_map = []
 
     def add_tempo(self, tick, tempo):
-        tempo_event = TempoEvent(tick, tempo, self.micros_at_tick(tick))
+        tempo_event = self.TempoEvent(tick, tempo, self.micros_at_tick(tick))
         self.tempo_map.append(tempo_event)
 
     def micros_at_tick(self, tick):
-        tempo_event_at_tick = TempoEvent()
+        tempo_event_at_tick = self.TempoEvent()
         for tempo_event in self.tempo_map:
             if tempo_event.tick > tick:
                 break
@@ -44,30 +58,54 @@ class TempoMap:
         )
         return tempo_event_at_tick.micros + micros_offset
 
+    class TempoEvent:
+        def __init__(self, tick=0, tempo=500000, micros=0):
+            self.tick = tick
+            self.tempo = tempo
+            self.micros = micros
 
-def process_midi(file, name):
-    rows = []
-    if name.lower().endswith(("mid", "midi", "kar")):
-        rows = "".join(midi_to_csv(file)).splitlines()
-    # elif file.lower().endswith(("musicxml", "mxl", mscx", "mscz")):
+
+def serialize(obj):
+    if isinstance(obj, list):
+        serialized = [serialize(x) for x in obj]
+    elif isinstance(obj, dict):
+        serialized = dict([(serialize(x), serialize(y)) for x, y in obj.items()])
+    elif hasattr(obj, "__dict__"):
+        serialized = serialize(vars(obj))
     else:
-        raise ValueError("Couldn't process " + name + " (invalid file extension).")
+        return obj
 
-    title = ".".join(name.split(".")[:-1])  # Remove file extension
+    return serialized
 
-    notes = []
-    tempoMap = TempoMap()
+
+def process_midi(midiFile):
+    if isinstance(midiFile, str):
+        name = midiFile.split("/")[-1]  # Remove path
+    else:
+        name = midiFile.filename
+
+    if not name.lower().endswith(("mid", "midi", "kar")):
+        raise ValueError("Oops! Your file seems to have the wrong extension!")
+
+    try:
+        csv = midi_to_csv(midiFile)
+    except Exception:
+        raise ValueError("Oh no! There was a problem processing your MIDI file!")
+
+    song = Song(name)
+    tempo_map = TempoMap()
+    rows = "".join(csv).splitlines()
     for i, row in enumerate(rows):
         cells = row.split(", ")
         event = cells[2]
         if event == "Header":
-            tempoMap.ticks_per_quarter_note = int(cells[5])
+            tempo_map.ticks_per_quarter_note = int(cells[5])
         elif event == "Title_t" and (track := int(cells[0])) == 1:
-            title = cells[3][1:-1]
+            song.title = cells[3][1:-1]
         elif event == "Tempo":
             tick = int(cells[1])
             tempo = int(cells[3])
-            tempoMap.add_tempo(tick, tempo)
+            tempo_map.add_tempo(tick, tempo)
         elif event == "Note_on_c" and (velocity := int(cells[5])) != 0:
             track_on = int(cells[0])
             tick_on = int(cells[1])
@@ -85,8 +123,10 @@ def process_midi(file, name):
                     and pitch_on == (pitch_off := int(cells[4]))
                 ):
                     tick_off = int(cells[1])
-                    note = Note(track_on, tick_on, tick_off, pitch_on, velocity_on, tempoMap)
-                    notes.append(note)
+                    song.add_note(track_on, tick_on, tick_off, pitch_on, velocity_on, tempo_map)
                     break
 
-    return [title, [vars(note) for note in notes]]
+    if not song.notes:
+        raise ValueError("Uh oh! Looks like your MIDI file doesn't have any notes!")
+
+    return serialize(song)

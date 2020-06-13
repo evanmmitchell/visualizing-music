@@ -8,7 +8,7 @@ app = Flask(__name__)
 csp = {"default-src": "'self'", "media-src": "'self' data:"}
 Talisman(app, content_security_policy=csp)
 
-DEFAULT_MIDI_PATH = "sample-midi/happy-birthday-simplified.mid"
+DEFAULT_SONG = process_midi("sample-midi/happy-birthday-simplified.mid")
 
 
 @app.route("/")
@@ -18,11 +18,16 @@ def route_root():
 
 @app.route("/process-midi", methods=["POST"])
 def route_process_midi():
-    try:
-        file = request.files["midiFile"]
-        name = file.filename
-    except Exception:
-        file = DEFAULT_MIDI_PATH
-        name = file.split("/")[-1]
-    title, notes = process_midi(file, name)
-    return {"title": title, "notes": notes}
+    song = None
+    exception = None
+
+    if request.files:
+        midiFile = request.files["midiFile"]
+        try:
+            song = process_midi(midiFile)
+        except ValueError as ve:
+            exception = str(ve)
+    else:
+        song = DEFAULT_SONG
+
+    return {"song": song, "exception": exception}
