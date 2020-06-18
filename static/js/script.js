@@ -1,31 +1,26 @@
 "use strict";
 
-let renderer, scene, camera, controls, player, instrumentPromise, objectsInScene = [];
+let renderer, scene, objectsInScene, camera, controls, player, instrumentPromise, mostRecentXhr;
 
-
-initialize();
-animate();
-
-
-function initialize() {
+{
   initializeAudio();
-  initializeThreeJS();
+  initializeVisualization();
 
   let fileInput = document.getElementById("fileInput");
+  let title = document.getElementById("title");
+  let playerControls = document.getElementById("player");
   fileInput.oninput = event => {
-    let midiFile = event.target.files[0];
-
+    let midiFile = event.target.files?.[0];
     if (!midiFile) {
       return;
     }
 
-    let title = document.getElementById("title");
     title.textContent = "Loading...";
-
-    let playerControls = document.getElementById("player");
     playerControls.style.display = "none";
 
-    player?.stop();
+    if (player.isPlaying) {
+      player.stop();
+    }
 
     for (let object of objectsInScene) {
       object.material.dispose();
@@ -38,6 +33,8 @@ function initialize() {
   };
 
   loadMidi();
+
+  animate();
 }
 
 function animate() {
@@ -50,6 +47,8 @@ function animate() {
 }
 
 function initializeAudio() {
+  player = new Player();
+
   let AudioContext = window.AudioContext ?? window.webkitAudioContext;
   let audioContext = new AudioContext();
   unmute(audioContext);
@@ -57,9 +56,9 @@ function initializeAudio() {
 
   let slider = document.getElementById("slider");
   slider.step = Number.MIN_VALUE;
-  let wasPlaying = false;
+  let wasPlaying;
   slider.oninput = () => {
-    if (player?.isPlaying) {
+    if (player.isPlaying) {
       player.pause();
       wasPlaying = true;
     }
@@ -75,26 +74,43 @@ function initializeAudio() {
   let pauseButton = document.getElementById("pause");
   let stopButton = document.getElementById("stop");
   playButton.onclick = play;
-  pauseButton.onclick = () => player?.pause();
-  stopButton.onclick = () => player?.stop();
+  pauseButton.onclick = () => player.pause();
+  stopButton.onclick = () => player.stop();
 
+  player.on("play", () => {
+    playButton.style.display = "none";
+    pauseButton.style.display = "initial";
+  });
+  player.on("pause", () => {
+    playButton.style.display = "initial";
+    pauseButton.style.display = "none";
+  });
+  player.on("stop", () => {
+    slider.value = 0;
+    playButton.style.display = "initial";
+    pauseButton.style.display = "none";
+  });
+
+  let playerControls = document.getElementById("player");
   const SPACE_BAR = 32;
   window.onkeydown = event => {
-    if (event.which === SPACE_BAR) {
-      player?.isPlaying ? player.pause() : play();
-      event.preventDefault();
+    if (event.which !== SPACE_BAR) {
+      return;
     }
+
+    if (playerControls.style.display !== "none") {
+      player.isPlaying ? player.pause() : play();
+    }
+    event.preventDefault();
   };
 
   function play() {
-    if (player) {
-      let playTime = slider.value / 100 * player.songTime;
-      player.play(playTime);
-    }
+    let playTime = slider.value / 100 * player.songTime;
+    player.play(playTime);
   }
 }
 
-function initializeThreeJS() {
+function initializeVisualization() {
   renderer = new THREE.WebGLRenderer({ alpha: true });
   document.body.appendChild(renderer.domElement);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -106,6 +122,8 @@ function initializeThreeJS() {
   let directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.5);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
+
+  objectsInScene = [];
 
   let frustumSize = 10;
   let aspectRatio = window.innerWidth / window.innerHeight;
@@ -133,11 +151,12 @@ function loadMidi(midiFile) {
   let formData = new FormData();
   formData.append("midiFile", midiFile);
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "/process-midi", true);
+  mostRecentXhr = xhr;
+  xhr.open("POST", "/process-midi");
 
   let title = document.getElementById("title");
-  xhr.onreadystatechange = () => {
-    if (xhr.readyState !== 4 || xhr.status !== 200) {
+  xhr.onload = () => {
+    if (xhr.status !== 200 || xhr !== mostRecentXhr) {
       return;
     }
 
@@ -159,11 +178,13 @@ function loadMidi(midiFile) {
 }
 
 function updatePlayTime() {
-  if (!player) {
+  let playerControls = document.getElementById("player");
+  if (playerControls.style.display === "none") {
     return;
   }
 
   let slider = document.getElementById("slider");
+  let playTime = document.getElementById("playTime");
 
   if (player.isPlaying) {
     let playPercent = player.playTime / player.songTime * 100;
@@ -174,13 +195,11 @@ function updatePlayTime() {
   let currentTime = Math.round(slider.value / 100 * player.songTime);
   let currentMinutes = String(Math.floor(currentTime / 60));
   let currentSeconds = String(currentTime % 60);
-  let playTime = document.getElementById("playTime");
   playTime.textContent = currentMinutes.padStart(songTimeMinutes.length, "0") + ":" + currentSeconds.padStart(2, "0");
 }
 
 async function loadAudio(song) {
-  let instrument = await instrumentPromise;
-  player = new Player(instrument, song);
+  player.song = song;
 
   let minutes = Math.floor(player.songTime / 60);
   let seconds = Math.round(player.songTime % 60);
@@ -190,22 +209,12 @@ async function loadAudio(song) {
   let slider = document.getElementById("slider");
   slider.value = 0;
 
-  let playButton = document.getElementById("play");
-  let pauseButton = document.getElementById("pause");
-  player.on("play", () => {
-    playButton.style.display = "none";
-    pauseButton.style.display = "initial";
-  });
-  player.on("stop", () => {
-    slider.value = 0;
-  });
-  player.on("stopPlaying", () => {
-    playButton.style.display = "initial";
-    pauseButton.style.display = "none";
-  });
+  if (!player.instrument) {
+    player.instrument = await instrumentPromise;
+  }
 
   let playerControls = document.getElementById("player");
-  playerControls.style.display = "flex";
+  playerControls.style.display = "inline-flex";
 }
 
 function loadVisualization(song) {
@@ -275,7 +284,7 @@ function staticSphericalVisualization(song) {
     let theta = (note.time - song.startTime) * thetaScaleFactor;
     let depth = -note.track + song.minTrack;
     sphere.position.setFromCylindricalCoords(radius, theta, depth);
-    sphere.rotateY(Math.PI / 2); //Hopefully doesn't just rotate sphere
+    sphere.rotateY(Math.PI / 2);  // Hopefully doesn't just rotate sphere
     sphere.castShadow = true;
     sphere.receiveShadow = true;
     scene.add(sphere);
