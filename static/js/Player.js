@@ -1,11 +1,54 @@
 class Player {
-  constructor(instrument, song) {
+  constructor(instrument, song, onready) {
     this.instrument = instrument;
     this.song = song;
+    this.on("ready", onready);
+  }
+
+  get instrument() {
+    return this._instrument;
+  }
+
+  set instrument(instrument) {
+    (async () => {
+      this._instrument = await instrument;
+
+      if (this.isReady) {
+        this._emitPlayerEvent("ready");
+      }
+    })();
+  }
+
+  get song() {
+    return this._song;
+  }
+
+  set song(song) {
+    this.stop();
+
+    this._song = null;
+
+    if (song?.notes) {
+      this._events = [];
+      for (let note of song.notes) {
+        let event = { time: note.time, note: note.pitch, duration: note.duration, gain: note.velocity };
+        this._events.push(event);
+      }
+    }
+
+    this._song = song;
+
+    if (this.isReady) {
+      this._emitPlayerEvent("ready");
+    }
   }
 
   get isPlaying() {
     return this._startTime != null;
+  }
+
+  get isReady() {
+    return this.instrument != null && this.song != null;
   }
 
   get playTime() {
@@ -17,34 +60,12 @@ class Player {
     return audioContext.currentTime - this._startTime;
   }
 
-  get song() {
-    return this._song;
-  }
-
-  set song(song) {
-    if (this.isPlaying) {
-      this.stop();
-    }
-
-    this._song = song;
-
-    if (!song) {
-      return;
-    }
-
-    this._events = [];
-    for (let note of song.notes) {
-      let event = { time: note.time, note: note.pitch, duration: note.duration, gain: note.velocity };
-      this._events.push(event);
-    }
-  }
-
   get songTime() {
     return this.song?.endTime;
   }
 
   play(playTime) {
-    if (!this.instrument || !this.song) {
+    if (!this.isReady) {
       throw TypeError("Both an instrument and a song are required to play");
     }
 
@@ -90,16 +111,12 @@ class Player {
   }
 
   _stopPlaying() {
-    if (!this.instrument) {
-      throw TypeError("An instrument is required to pause or stop");
-    }
-
     clearTimeout(this._nextInterval);
-    this.instrument.stop();
+    this.instrument?.stop();
     this._startTime = null;
   }
 
   _emitPlayerEvent(playerEvent) {
-    this._eventListeners[playerEvent]?.();
+    this._eventListeners?.[playerEvent]?.();
   }
 }
