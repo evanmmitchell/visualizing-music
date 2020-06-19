@@ -26,16 +26,6 @@ class Player {
   set song(song) {
     this.stop();
 
-    this._song = null;
-
-    if (song?.notes) {
-      this._events = [];
-      for (let note of song.notes) {
-        let event = { time: note.time, note: note.pitch, duration: note.duration, gain: note.velocity };
-        this._events.push(event);
-      }
-    }
-
     this._song = song;
 
     if (this.isReady) {
@@ -75,11 +65,11 @@ class Player {
     let audioContext = this.instrument.context;
     let nextPlayTime = playTime + SCHEDULE_INTERVAL;
 
-    let eventsToSchedule = this._events.filter(event => playTime <= event.time && event.time < nextPlayTime);
-    eventsToSchedule = JSON.parse(JSON.stringify(eventsToSchedule));  // Deep copy
-    eventsToSchedule.forEach(event => event.time -= playTime);
+    let notesToSchedule = this.song.notes.filter(note => playTime <= note.time && note.time < nextPlayTime);
+    notesToSchedule = JSON.parse(JSON.stringify(notesToSchedule));  // Deep copy
+    notesToSchedule.forEach(note => note.time -= playTime);
     this._startTime = this._startTime ?? audioContext.currentTime - playTime;
-    this.instrument.schedule(this._startTime + playTime, eventsToSchedule);
+    this.instrument.schedule(this._startTime + playTime, notesToSchedule);
 
     if (nextPlayTime < this.songTime) {
       this._nextInterval = setTimeout(() => this.play(nextPlayTime), (SCHEDULE_INTERVAL - TIME_TO_SCHEDULE) * MILLIS_PER_SECOND);
