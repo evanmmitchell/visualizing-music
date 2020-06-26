@@ -1,4 +1,4 @@
-name: Deploy to Google Cloud Platform
+name: Deploy to Google App Engine
 on:
   push:
     branches:
@@ -7,13 +7,12 @@ on:
       - '.git**'
       - '**.md'
 jobs:
-  GCPDeploy:
-    name: GCP Deploy
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      - uses: GoogleCloudPlatform/github-actions/appengine-deploy@master
         with:
           project_id: ${{ secrets.GCLOUD_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCLOUD_AUTH }}
-      - run: gcloud app deploy
+          credentials: ${{ secrets.GCLOUD_AUTH }}
