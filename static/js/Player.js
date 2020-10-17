@@ -1,8 +1,10 @@
-class Player {
+class Player extends EventTarget {
   constructor(instrument, song, onready) {
+    super();
+
     this.instrument = instrument;
     this.song = song;
-    this.on("ready", onready);
+    this.addEventListener("ready", onready);
   }
 
   get instrument() {
@@ -14,7 +16,7 @@ class Player {
       this._instrument = await instrument;
 
       if (this.isReady) {
-        this._emitPlayerEvent("ready");
+        this.dispatchEvent(new Event("ready"));
       }
     })();
   }
@@ -29,7 +31,7 @@ class Player {
     this._song = song;
 
     if (this.isReady) {
-      this._emitPlayerEvent("ready");
+      this.dispatchEvent(new Event("ready"));
     }
   }
 
@@ -68,7 +70,10 @@ class Player {
     let notesToSchedule = this.song.notes.filter(note => playTime <= note.time && note.time < nextPlayTime);
     notesToSchedule = JSON.parse(JSON.stringify(notesToSchedule));  // Deep copy
     notesToSchedule.forEach(note => note.time -= playTime);
-    this._startTime = this._startTime ?? audioContext.currentTime - playTime;
+
+    if (!this.isPlaying) {
+      this._startTime = audioContext.currentTime - playTime;
+    }
     this.instrument.schedule(this._startTime + playTime, notesToSchedule);
 
     if (nextPlayTime < this.songTime) {
@@ -78,35 +83,24 @@ class Player {
       this._nextInterval = setTimeout(() => this.stop(), (endTime - audioContext.currentTime) * MILLIS_PER_SECOND);
     }
 
-    this._emitPlayerEvent("play");
+    this.dispatchEvent(new Event("play"));
   }
 
   pause() {
     this._stopPlaying();
 
-    this._emitPlayerEvent("pause");
+    this.dispatchEvent(new Event("pause"));
   }
 
   stop() {
     this._stopPlaying();
 
-    this._emitPlayerEvent("stop");
-  }
-
-  on(playerEvent, callback) {
-    if (!this._eventListeners) {
-      this._eventListeners = {};
-    }
-    this._eventListeners[playerEvent] = callback;
+    this.dispatchEvent(new Event("stop"));
   }
 
   _stopPlaying() {
     clearTimeout(this._nextInterval);
     this.instrument?.stop();
     this._startTime = null;
-  }
-
-  _emitPlayerEvent(playerEvent) {
-    this._eventListeners?.[playerEvent]?.();
   }
 }

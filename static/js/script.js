@@ -9,7 +9,7 @@ let renderer, scene, objectsInScene, camera, controls, player, mostRecentXhr;
   let fileInput = document.getElementById("fileInput");
   let title = document.getElementById("title");
   let playerControls = document.getElementById("player");
-  fileInput.oninput = event => {
+  fileInput.addEventListener("input", event => {
     let midiFile = event.target.files?.[0];
     if (!midiFile) {
       return;
@@ -30,7 +30,7 @@ let renderer, scene, objectsInScene, camera, controls, player, mostRecentXhr;
     objectsInScene = [];
 
     loadMidi(midiFile);
-  };
+  });
 
   loadMidi();
 
@@ -63,37 +63,37 @@ function initializeAudio() {
 
   slider.step = Number.MIN_VALUE;
   let wasPlaying;
-  slider.oninput = () => {
+  slider.addEventListener("input", () => {
     if (player.isPlaying) {
       player.pause();
       wasPlaying = true;
     }
-  };
-  slider.onchange = () => {
+  });
+  slider.addEventListener("change", () => {
     if (wasPlaying) {
       play();
       wasPlaying = false;
     }
-  };
+  });
 
-  playButton.onclick = play;
-  pauseButton.onclick = () => player.pause();
-  stopButton.onclick = () => player.stop();
+  playButton.addEventListener("click", play);
+  pauseButton.addEventListener("click", () => player.pause());
+  stopButton.addEventListener("click", () => player.stop());
 
-  player.on("play", () => {
+  player.addEventListener("play", () => {
     playButton.style.display = "none";
     pauseButton.style.display = "initial";
   });
-  player.on("pause", () => {
+  player.addEventListener("pause", () => {
     playButton.style.display = "initial";
     pauseButton.style.display = "none";
   });
-  player.on("stop", () => {
+  player.addEventListener("stop", () => {
     slider.value = 0;
     playButton.style.display = "initial";
     pauseButton.style.display = "none";
   });
-  player.on("ready", () => {
+  player.addEventListener("ready", () => {
     let minutes = Math.floor(player.songTime / 60);
     let seconds = Math.round(player.songTime % 60);
     endTime.textContent = minutes + ":" + seconds;
@@ -103,9 +103,8 @@ function initializeAudio() {
     playerControls.style.display = "inline-flex";
   });
 
-  const SPACE_BAR = 32;
-  window.onkeydown = event => {
-    if (event.which !== SPACE_BAR) {
+  window.addEventListener("keydown", event => {
+    if (event.key !== " ") {
       return;
     }
 
@@ -113,7 +112,7 @@ function initializeAudio() {
       player.isPlaying ? player.pause() : play();
     }
     event.preventDefault();
-  };
+  });
 
   function play() {
     let playTime = slider.value / 100 * player.songTime;
@@ -139,7 +138,7 @@ function initializeVisualization() {
   let frustumSize = 10;
   let aspectRatio = window.innerWidth / window.innerHeight;
   camera = new THREE.OrthographicCamera(frustumSize * aspectRatio / -2, frustumSize * aspectRatio / 2, frustumSize / 2, frustumSize / -2);
-  window.onresize = () => {
+  window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     aspectRatio = window.innerWidth / window.innerHeight;
     camera.left = frustumSize * aspectRatio / -2;
@@ -147,15 +146,15 @@ function initializeVisualization() {
     camera.top = frustumSize / 2;
     camera.bottom = frustumSize / -2;
     camera.updateProjectionMatrix();
-  };
+  });
 
   // TODO: Change to trackball control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.onchange = () => {
+  controls.addEventListener("change", () => {
     directionalLight.position.copy(camera.position);
     let directionalLightDisplacementVector = new THREE.Vector3(-3, 2, -1);  // TODO: Fix to follow camera orientation
     // directionalLight.position.add(directionalLightDisplacementVector);
-  };
+  });
 }
 
 function loadMidi(midiFile) {
@@ -166,7 +165,7 @@ function loadMidi(midiFile) {
   xhr.open("POST", "/process-midi");
 
   let title = document.getElementById("title");
-  xhr.onload = () => {
+  xhr.addEventListener("load", () => {
     if (xhr.status !== 200 || xhr !== mostRecentXhr) {
       return;
     }
@@ -183,7 +182,7 @@ function loadMidi(midiFile) {
     title.textContent = song.title;
     player.song = song;
     loadVisualization(song);
-  };
+  });
 
   xhr.send(formData);
 }
