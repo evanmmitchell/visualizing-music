@@ -65,19 +65,6 @@ class TempoMap:
             self.micros = micros
 
 
-def serialize(obj):
-    if isinstance(obj, list):
-        serialized = [serialize(x) for x in obj]
-    elif isinstance(obj, dict):
-        serialized = dict([(serialize(x), serialize(y)) for x, y in obj.items()])
-    elif hasattr(obj, "__dict__"):
-        serialized = serialize(vars(obj))
-    else:
-        return obj
-
-    return serialized
-
-
 def process_midi(midiFile):
     if isinstance(midiFile, str):
         filename = midiFile.rsplit("/", 1)[-1]
@@ -132,4 +119,4 @@ def process_midi(midiFile):
     if not song.notes:
         raise ValueError("Uh oh! Looks like your MIDI file doesn't have any notes!")
 
-    return serialize(song)
+    return song
