@@ -3,8 +3,8 @@ from py_midicsv import midi_to_csv
 
 
 class Song:
-    def __init__(self, name):
-        self.title = ".".join(name.split(".")[:-1])  # Remove file extension
+    def __init__(self, title):
+        self.title = title
         self.notes = []
         self.minPitch = inf
         self.maxPitch = -inf
@@ -80,11 +80,14 @@ def serialize(obj):
 
 def process_midi(midiFile):
     if isinstance(midiFile, str):
-        name = midiFile.split("/")[-1]  # Remove path
+        filename = midiFile.rsplit("/", 1)[-1]
     else:
-        name = midiFile.filename
+        filename = midiFile.filename
 
-    if not name.lower().endswith(("mid", "midi", "kar")):
+    filename = filename.rsplit(".", 1)
+    title = filename[0]
+    extension = filename[1].lower() if 1 < len(filename) else ""
+    if extension not in ["mid", "midi", "kar"]:
         raise ValueError("Oops! Your file seems to have the wrong extension!")
 
     try:
@@ -92,7 +95,7 @@ def process_midi(midiFile):
     except Exception:
         raise ValueError("Oh no! There was a problem processing your MIDI file!")
 
-    song = Song(name)
+    song = Song(title)
     tempo_map = TempoMap()
     rows = "".join(csv).splitlines()
     for i, row in enumerate(rows):
