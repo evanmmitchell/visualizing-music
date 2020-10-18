@@ -50,7 +50,7 @@ function initializeAudio() {
   let AudioContext = window.AudioContext ?? window.webkitAudioContext;
   let audioContext = new AudioContext();
   unmute(audioContext);
-  let instrumentPromise = Soundfont.instrument(audioContext, "static/js/lib/soundfont-player/acoustic_grand_piano-mp3.js");
+  let instrumentPromise = Soundfont.instrument(audioContext, "js/lib/soundfont-player/acoustic_grand_piano-mp3.js");
 
   player = new Player(instrumentPromise);
 

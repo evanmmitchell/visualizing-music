@@ -3,7 +3,7 @@ from flask_talisman import Talisman
 from midi_process import process_midi
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="")
 
 csp = {"default-src": "'self'", "media-src": "'self' data:"}
 Talisman(app, content_security_policy=csp)
