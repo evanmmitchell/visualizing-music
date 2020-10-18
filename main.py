@@ -47,5 +47,5 @@ def route_process_midi():
 
 
 @app.route("/sample-midi/<path:filename>")
-def route_midi(filename):
+def route_sample_midi(filename):
     return send_from_directory("sample-midi", filename)
