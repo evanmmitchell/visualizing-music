@@ -43,7 +43,7 @@ def route_process_midi():
     else:
         song = DEFAULT_SONG
 
-    return {"song": serialize(song), "exception": exception}
+    return serialize({"song": song, "exception": exception})
 
 
 @app.route("/sample-midi/<path:filename>")
