@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_talisman import Talisman
 from midi_process import process_midi
 
@@ -31,3 +31,8 @@ def route_process_midi():
         song = DEFAULT_SONG
 
     return {"song": song, "exception": exception}
+
+
+@app.route("/sample-midi/<path:filename>")
+def route_midi(filename):
+    return send_from_directory("sample-midi", filename)
