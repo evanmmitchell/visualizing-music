@@ -1,5 +1,4 @@
 #!include:.gitignore
 .gcloudignore
 .git*
-LICENSE.md
-README.md
+*.md
