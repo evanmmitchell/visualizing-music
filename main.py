@@ -1,27 +1,26 @@
-from flask import Flask, request, send_from_directory
+from json import JSONEncoder
+from flask import Flask, jsonify, request, send_from_directory
 from flask_talisman import Talisman
 from midi_process import process_midi
 
 
-def serialize(obj):
-    if isinstance(obj, list):
-        serialized = [serialize(x) for x in obj]
-    elif isinstance(obj, dict):
-        serialized = dict([(serialize(x), serialize(y)) for x, y in obj.items()])
-    elif hasattr(obj, "__dict__"):
-        serialized = serialize(vars(obj))
-    else:
-        return obj
+DEFAULT_SONG = process_midi("sample-midi/happy-birthday-simplified.mid")
 
-    return serialized
+
+class ObjectJSONEncoder(JSONEncoder):
+    def default(self, o):
+        try:
+            return vars(o)
+        except:
+            return JSONEncoder.default(self, o)
 
 
 app = Flask(__name__, static_url_path="")
 
+app.json_encoder = ObjectJSONEncoder
+
 csp = {"default-src": "'self'", "media-src": "'self' data:"}
 Talisman(app, content_security_policy=csp)
-
-DEFAULT_SONG = process_midi("sample-midi/happy-birthday-simplified.mid")
 
 
 @app.route("/")
@@ -29,7 +28,7 @@ def route_root():
     return app.send_static_file("index.html")
 
 
-@app.route("/process-midi", methods=["POST"])
+@app.post("/process-midi")
 def route_process_midi():
     song = None
     exception = None
@@ -43,7 +42,7 @@ def route_process_midi():
     else:
         song = DEFAULT_SONG
 
-    return serialize({"song": song, "exception": exception})
+    return jsonify(song=song, exception=exception)
 
 
 @app.route("/sample-midi/<path:filename>")
