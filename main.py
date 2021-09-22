@@ -12,7 +12,7 @@ class ObjectJSONEncoder(JSONEncoder):
         try:
             return vars(o)
         except:
-            return JSONEncoder.default(self, o)
+            return super().default(o)
 
 
 app = Flask(__name__, static_url_path="")
