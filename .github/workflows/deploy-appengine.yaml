@@ -1,5 +1,6 @@
 name: Deploy to Google App Engine
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'master'
@@ -10,9 +11,13 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@master
-      - uses: google-github-actions/deploy-appengine@main
+      - uses: actions/checkout@v2
+      - uses: google-github-actions/auth@v0
         with:
-          project_id: ${{ secrets.GCLOUD_PROJECT_ID }}
-          credentials: ${{ secrets.GCLOUD_AUTH }}
+          workload_identity_provider: projects/375905799426/locations/global/workloadIdentityPools/github/providers/github-actions
+          service_account: github-actions@visualizingmusic.iam.gserviceaccount.com
+      - uses: google-github-actions/deploy-appengine@v0
