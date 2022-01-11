@@ -148,7 +148,6 @@ function initializeVisualization() {
     camera.updateProjectionMatrix();
   });
 
-  // TODO: Change to trackball control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.addEventListener("change", () => {
     directionalLight.position.copy(camera.position);
